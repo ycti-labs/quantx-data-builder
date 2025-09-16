@@ -1,0 +1,36 @@
+ticker,exchange,name,sector,market_cap,active
+AAPL,us,Apple Inc.,Technology,3000000000000,true
+MSFT,us,Microsoft Corporation,Technology,2800000000000,true
+GOOGL,us,Alphabet Inc.,Technology,1700000000000,true
+AMZN,us,Amazon.com Inc.,Consumer Discretionary,1500000000000,true
+TSLA,us,Tesla Inc.,Consumer Discretionary,800000000000,true
+META,us,Meta Platforms Inc.,Technology,750000000000,true
+NVDA,us,NVIDIA Corporation,Technology,1200000000000,true
+BRK-B,us,Berkshire Hathaway Inc.,Financial Services,700000000000,true
+JPM,us,JPMorgan Chase & Co.,Financial Services,450000000000,true
+JNJ,us,Johnson & Johnson,Healthcare,400000000000,true
+V,us,Visa Inc.,Financial Services,450000000000,true
+PG,us,Procter & Gamble Co.,Consumer Staples,350000000000,true
+HD,us,The Home Depot Inc.,Consumer Discretionary,330000000000,true
+UNH,us,UnitedHealth Group Inc.,Healthcare,500000000000,true
+MA,us,Mastercard Inc.,Financial Services,350000000000,true
+DIS,us,The Walt Disney Company,Communication Services,180000000000,true
+ADBE,us,Adobe Inc.,Technology,220000000000,true
+NFLX,us,Netflix Inc.,Communication Services,180000000000,true
+CRM,us,Salesforce Inc.,Technology,200000000000,true
+PYPL,us,PayPal Holdings Inc.,Financial Services,70000000000,true
+0700,hk,Tencent Holdings Ltd.,Technology,350000000000,true
+9988,hk,Alibaba Group Holding Ltd.,Consumer Discretionary,200000000000,true
+0939,hk,China Construction Bank Corp.,Financial Services,150000000000,true
+1299,hk,AIA Group Ltd.,Financial Services,90000000000,true
+0005,hk,HSBC Holdings PLC,Financial Services,120000000000,true
+3690,hk,Meituan,Consumer Discretionary,100000000000,true
+2318,hk,Ping An Insurance Group Co. of China Ltd.,Financial Services,80000000000,true
+1398,hk,Industrial and Commercial Bank of China Ltd.,Financial Services,200000000000,true
+2388,hk,BOC Hong Kong Holdings Ltd.,Financial Services,35000000000,true
+0883,hk,CNOOC Ltd.,Energy,60000000000,true
+1810,hk,Xiaomi Corp.,Technology,35000000000,true
+0388,hk,Hong Kong Exchanges and Clearing Ltd.,Financial Services,50000000000,true
+2020,hk,ANTA Sports Products Ltd.,Consumer Discretionary,20000000000,true
+1024,hk,Kuaishou Technology,Communication Services,25000000000,true
+0002,hk,CLP Holdings Ltd.,Utilities,25000000000,true

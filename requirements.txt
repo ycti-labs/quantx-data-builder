@@ -1,0 +1,31 @@
+# Core CLI and Configuration
+typer[all]==0.12.3
+pydantic==2.8.2
+pydantic-settings==2.4.0
+
+# Data Processing and Storage
+pandas==2.2.2
+pyarrow==17.0.0
+yfinance==0.2.28
+scipy>=1.9.0
+
+# Azure Cloud Storage
+azure-storage-blob==12.21.0
+azure-identity==1.17.1
+
+# Logging and Monitoring
+structlog==24.4.0
+rich==13.7.1
+
+# Retry Logic and Error Handling
+tenacity==9.0.0
+
+# Development and Testing
+pytest==8.3.2
+pytest-cov==5.0.0
+pytest-mock==3.14.0
+mypy==1.11.1
+ruff==0.5.7
+
+# Optional: For development convenience
+python-dotenv==1.0.1

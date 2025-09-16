@@ -1,0 +1,2 @@
+ticker,exchange,last_date,backfill_complete,last_error
+AAPL,us,2024-12-30,true,""
