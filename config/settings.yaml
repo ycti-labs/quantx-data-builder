@@ -1,0 +1,71 @@
+# QuantX Data Builder - Application Settings
+
+# Storage Configuration
+storage:
+  # Azure Storage Account
+  azure:
+    account_name: "stfinsightdata"
+    container_name: "finsight-data"
+    use_managed_identity: true
+  
+  # Local storage (development)
+  local:
+    root_path: "./data"
+
+# Data Fetching Configuration
+fetcher:
+  # Maximum concurrent workers for parallel downloads
+  max_workers: 10
+  
+  # Number of days to look back for incremental updates
+  lookback_days: 5
+  
+  # Chunk size for backfill operations
+  chunk_size: 100
+  
+  # Enable/disable fetching corporate actions (dividends, splits)
+  fetch_actions: true
+  
+  # Retry configuration
+  retry:
+    max_attempts: 3
+    exponential_base: 2
+    min_wait: 2
+    max_wait: 10
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "json"  # json or text
+  
+# Scheduling Configuration (for Azure Functions)
+schedules:
+  daily_update:
+    cron: "0 6 * * 1-5"  # Weekdays at 6 AM UTC
+    description: "Daily incremental data update"
+    
+  weekly_universe_refresh:
+    cron: "0 2 * * 6"  # Saturdays at 2 AM UTC
+    description: "Weekly universe refresh"
+
+# Data Schema Configuration
+schema:
+  ohlcv_columns:
+    - Date
+    - Open
+    - High
+    - Low
+    - Close
+    - Adj Close
+    - Volume
+    - Ticker
+    - Exchange
+  
+  # Parquet compression
+  compression: "zstd"
+  
+  # Partitioning strategy
+  partition_cols:
+    - exchange
+    - ticker
+    - year

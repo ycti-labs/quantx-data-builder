@@ -1,0 +1,19 @@
+# Container Image Python Requirements
+# Includes shared dependencies from src/ module
+
+# CLI framework
+click==8.1.7
+
+# Shared dependencies (same as Azure Functions)
+azure-storage-blob==12.19.0
+azure-identity==1.15.0
+yfinance==0.2.36
+pandas==2.2.0
+pyarrow==15.0.0
+pyyaml==6.0.1
+requests==2.31.0
+tenacity==8.2.3
+
+# Additional for Excel support (HKEX data)
+openpyxl==3.1.2
+lxml==5.1.0

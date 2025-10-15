@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AZURE_STORAGE_ACCOUNT": "stfinsightdata",
+    "AZURE_CONTAINER_NAME": "finsight-data",
+    "MAX_WORKERS": "10",
+    "LOOKBACK_DAYS": "5",
+    "UNIVERSE_PATH": "meta/universe_phase_1.csv",
+    "UNIVERSE_PHASE": "phase_1"
+  }
+}

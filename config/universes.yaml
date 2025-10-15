@@ -1,0 +1,83 @@
+# QuantX Data Builder - Universe Configuration
+# Defines stock universes across multiple markets and phases
+
+universes:
+  # Phase 1: HSI + S&P 500 (MVP - Core markets)
+  phase_1:
+    - name: "us_sp500"
+      description: "S&P 500 Index - Large-cap US stocks"
+      source_type: "wikipedia"
+      url: "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+      table_index: 0
+      symbol_column: "Symbol"
+      enabled: true
+
+    - name: "hk_hsi"
+      description: "Hang Seng Index - Major Hong Kong stocks"
+      source_type: "static"
+      symbols:
+        - "0002.HK"  # CLP Holdings
+        - "0005.HK"  # HSBC Holdings
+        - "0011.HK"  # Hang Seng Bank
+        - "0388.HK"  # Hong Kong Exchanges
+        - "0700.HK"  # Tencent
+        - "0883.HK"  # CNOOC
+        - "0939.HK"  # China Construction Bank
+        - "1024.HK"  # Kuaishou
+        - "1299.HK"  # AIA Group
+        - "1398.HK"  # ICBC
+        - "1810.HK"  # Xiaomi
+        - "2020.HK"  # ANTA Sports
+        - "2318.HK"  # Ping An Insurance
+        - "2388.HK"  # BOC Hong Kong
+        - "3690.HK"  # Meituan
+        - "9988.HK"  # Alibaba
+      enabled: true
+
+  # Phase 2: All Hong Kong Stocks (Comprehensive HK coverage)
+  phase_2:
+    - name: "hk_all"
+      description: "Complete HKEX Universe - All listed stocks"
+      source_type: "excel"
+      url: "https://www.hkex.com.hk/eng/services/trading/securities/securitieslists/ListOfSecurities.xlsx"
+      symbol_column: "Stock Code"
+      format: "hk_pad"  # Pad to 4 digits
+      symbol_suffix: ".HK"
+      enabled: false  # Enable when ready for full HK coverage
+
+  # Phase 3: S&P Composite (Full S&P coverage)
+  phase_3:
+    - name: "us_sp400"
+      description: "S&P 400 Mid-Cap Index"
+      source_type: "wikipedia"
+      url: "https://en.wikipedia.org/wiki/List_of_S%26P_400_companies"
+      table_index: 0
+      symbol_column: "Ticker symbol"
+      enabled: false
+
+    - name: "us_sp600"
+      description: "S&P 600 Small-Cap Index"
+      source_type: "wikipedia"
+      url: "https://en.wikipedia.org/wiki/List_of_S%26P_600_companies"
+      table_index: 0
+      symbol_column: "Ticker symbol"
+      enabled: false
+
+  # Phase 4: Japan Market (Future expansion)
+  phase_4:
+    - name: "jp_nikkei225"
+      description: "Nikkei 225 Index - Major Japanese stocks"
+      source_type: "wikipedia"
+      url: "https://en.wikipedia.org/wiki/Nikkei_225"
+      table_index: 1
+      symbol_column: "Ticker"
+      symbol_suffix: ".T"
+      enabled: false
+
+  # Phase 5: Europe Market (Future expansion)
+  phase_5:
+    - name: "eu_stoxx600"
+      description: "STOXX Europe 600 Index"
+      source_type: "static"
+      symbols: []  # To be populated
+      enabled: false
