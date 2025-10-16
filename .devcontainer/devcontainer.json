@@ -1,28 +1,112 @@
 {
     "name": "QuantX Data Builder",
-    "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/workspaces/quantx-data-builder",
+
+    // Features to install
     "features": {
-        "ghcr.io/devcontainers/features/azure-cli:1.2.8": {},
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/azure-cli:1": {
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "version": "latest",
+            "moby": true
+        },
+        "ghcr.io/devcontainers/features/git:1": {
+            "version": "latest"
+        },
         "ghcr.io/azure/azure-dev/azd:latest": {}
     },
+
+    // Configure tool-specific properties
     "customizations": {
         "vscode": {
+            // Set *default* container specific settings.json values on container create
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.analysis.typeCheckingMode": "basic",
+                "python.linting.enabled": true,
+                "python.linting.pylintEnabled": false,
+                "python.linting.flake8Enabled": false,
+                "python.linting.mypyEnabled": true,
+                "python.linting.mypyArgs": [
+                    "--ignore-missing-imports",
+                    "--follow-imports=silent"
+                ],
+                "python.formatting.provider": "black",
+                "python.formatting.blackPath": "/usr/local/bin/black",
+                "python.testing.pytestEnabled": true,
+                "python.testing.unittestEnabled": false,
+                "python.testing.pytestArgs": [
+                    "tests"
+                ],
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.organizeImports": "explicit"
+                },
+                "files.exclude": {
+                    "**/__pycache__": true,
+                    "**/.pytest_cache": true,
+                    "**/.mypy_cache": true,
+                    "**/*.pyc": true
+                },
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "[python]": {
+                    "editor.formatOnSave": true,
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports": "explicit"
+                    }
+                }
+            },
+
+            // Add the IDs of extensions you want installed when the container is created
             "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.black-formatter",
+                "ms-azuretools.vscode-azurefunctions",
+                "ms-azuretools.vscode-docker",
+                "ms-vscode.azure-account",
+                "ms-azuretools.vscode-azurecontainerapps",
+                "ms-azuretools.vscode-azurestorage",
                 "ms-azuretools.azure-dev",
                 "ms-azuretools.vscode-bicep",
-                "ms-python.python",
-                "esbenp.prettier-vscode",
+                "GitHub.copilot",
+                "GitHub.copilot-chat",
                 "DavidAnson.vscode-markdownlint"
             ]
         }
     },
-    "forwardPorts": [
-        50505
-    ],
-    "postCreateCommand": "",
+
+    // Use 'forwardPorts' to make a list of ports inside the container available locally
+    "forwardPorts": [7071, 50505],
+
+    // Use 'postCreateCommand' to run commands after the container is created
+    "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+    // Use 'postStartCommand' to run commands after the container starts
+    "postStartCommand": "git config --global --add safe.directory /workspaces/quantx-data-builder",
+
+    // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root
     "remoteUser": "vscode",
+
+    // Environment variables
+    "containerEnv": {
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+        "AZURE_FUNCTIONS_ENVIRONMENT": "Development"
+    },
+
+    // Mount points for Azure credentials and cache
+    "mounts": [
+        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.azure,target=/home/vscode/.azure,type=bind,consistency=cached"
+    ],
+
+    // Host requirements
     "hostRequirements": {
-        "memory": "8gb"
+        "memory": "8gb",
+        "cpus": 4
     }
 }

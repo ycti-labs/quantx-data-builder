@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    volumes:
+      # Mount workspace
+      - ../..:/workspaces:cached
+
+      # Mount Azure credentials (for Azure CLI authentication)
+      - ~/.azure:/home/vscode/.azure:cached
+
+      # Persist command history
+      - devcontainer-bash-history:/home/vscode/.bash_history
+
+      # Persist Python packages (optional, for faster rebuilds)
+      - devcontainer-python-packages:/usr/local/lib/python3.11/site-packages
+
+    # Set working directory
+    working_dir: /workspaces/quantx-data-builder
+
+    # Keeps container running
+    command: /bin/sh -c "while sleep 1000; do :; done"
+
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PIP_DISABLE_PIP_VERSION_CHECK=1
+      - AZURE_FUNCTIONS_ENVIRONMENT=Development
+
+    # Network mode
+    network_mode: bridge
+
+    # Port mappings
+    ports:
+      - "7071:7071" # Azure Functions
+      - "8080:8080" # Alternative HTTP port
+
+    # Use host's network for better Azure connectivity
+    # Uncomment if you need direct access to host network
+    # network_mode: "host"
+
+volumes:
+  devcontainer-bash-history:
+  devcontainer-python-packages:
