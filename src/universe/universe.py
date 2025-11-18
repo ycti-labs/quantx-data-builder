@@ -4,6 +4,7 @@ Supports multiple market universes with configurable data sources
 """
 
 import logging
+from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -14,35 +15,38 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-class Universe:
+class Universe(ABC):
     """
     Main class to orchestrate universe building from configured sources
     Handles multiple phases and dependencies between universes
     Also provides membership query functionality
     """
 
-    def __init__(self, config_path: Optional[str] = None, data_root: str = "data/curated"):
+    def __init__(self, 
+                universe_name: str,
+                 exchange: str,
+                 currency: str,
+                 data_root: str = "./data"
+    ):
         """
         Initialize universe builder
 
         Args:
-            config_path: Path to universe configuration YAML file (optional for membership queries)
             data_root: Root directory for data storage (default: data/curated)
         """
-        # Config loading is optional - needed for building universes, not for querying membership
-        if config_path:
-            try:
-                from ..market_data.config_loader import FetcherConfig
-                self.config = FetcherConfig(config_path)
-            except Exception as e:
-                logger.warning(f"Could not load config from {config_path}: {e}")
-                self.config = None
-        else:
-            self.config = None
-
+        self.name: str = universe_name
+        self.exchange: str = exchange
+        self.currency: str = currency
         self.data_root = Path(data_root)
 
-    def write_snappy_parquet(self, df: pd.DataFrame, output_path: Path) -> None:
+    @abstractmethod
+    def build_membership(self):
+        pass
+
+    def get_membership_path(self, mode: str = 'daily') -> Path:
+        return self.data_root / "curated" / "membership" / f"universe={self.name.lower()}" / f"mode={mode}"
+
+    def write_parquet(self, df: pd.DataFrame, output_path: Path) -> None:
         """
         Write DataFrame to Snappy-compressed Parquet file.
 
@@ -58,14 +62,12 @@ class Universe:
 
     def get_members(
         self,
-        universe: str,
         as_of_date: Optional[str] = None
     ) -> List[str]:
         """
         Get universe members as of a specific date
 
-        Reads from membership data stored in:
-        data/curated/membership/universe={universe}/mode=intervals/
+        Reads from membership interval data stored in Parquet files.
 
         Args:
             universe: Universe name (e.g., 'sp500', 'nasdaq100')
@@ -80,13 +82,7 @@ class Universe:
             lookup_date = datetime.strptime(as_of_date, '%Y-%m-%d').date()
 
         # Path to membership intervals file
-        intervals_path = (
-            self.data_root /
-            "membership" /
-            f"universe={universe.lower()}" /
-            "mode=intervals" /
-            f"{universe.lower()}_membership_intervals.parquet"
-        )
+        intervals_path = self.get_membership_path(mode='intervals') / f"{self.name.lower()}_membership_intervals.parquet"
 
         try:
             # Read membership intervals
@@ -104,7 +100,7 @@ class Universe:
             symbols = active['ticker'].unique().tolist()
 
             logger.info(
-                f"Found {len(symbols)} members in {universe} as of {lookup_date}"
+                f"Found {len(symbols)} members in {self.name} as of {lookup_date}"
             )
             return symbols
 
@@ -117,7 +113,7 @@ class Universe:
             logger.error(f"Error reading membership data: {e}")
             return []
 
-    def get_current_members(self, universe: str) -> List[str]:
+    def get_current_members(self) -> List[str]:
         """
         Get current universe members (as of today)
 
@@ -127,11 +123,10 @@ class Universe:
         Returns:
             List of current member ticker symbols
         """
-        return self.get_members(universe, as_of_date=None)
+        return self.get_members(as_of_date=None)
 
     def get_all_historical_members(
         self,
-        universe: str,
         period_start: str,
         period_end: str
     ) -> List[str]:
@@ -147,7 +142,6 @@ class Universe:
         (not just the current 500) because companies get added/removed.
 
         Args:
-            universe: Universe name (e.g., 'sp500', 'nasdaq100')
             period_start: Start date in 'YYYY-MM-DD' format
             period_end: End date in 'YYYY-MM-DD' format
 
@@ -158,13 +152,7 @@ class Universe:
         end = datetime.strptime(period_end, '%Y-%m-%d').date()
 
         # Path to membership intervals file
-        intervals_path = (
-            self.data_root /
-            "membership" /
-            f"universe={universe.lower()}" /
-            "mode=intervals" /
-            f"{universe.lower()}_membership_intervals.parquet"
-        )
+        intervals_path = self.get_membership_path(mode='intervals') / f"{self.name.lower()}_membership_intervals.parquet"
 
         try:
             # Read membership intervals
@@ -185,7 +173,7 @@ class Universe:
             symbols = historical_members['ticker'].unique().tolist()
 
             logger.info(
-                f"Found {len(symbols)} historical members in {universe} "
+                f"Found {len(symbols)} historical members in {self.name} "
                 f"for period {period_start} to {period_end} "
                 f"(includes current + removed members)"
             )
@@ -208,7 +196,7 @@ class Universe:
             logger.warning(
                 "Falling back to current members only (survivorship bias present!)"
             )
-            return self.get_current_members(universe)
+            return self.get_current_members()
         except Exception as e:
             logger.error(f"Error reading membership data: {e}")
             return []

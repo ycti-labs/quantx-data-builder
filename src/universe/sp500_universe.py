@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import pandas as pd
+
 from universe import Universe
 
 
@@ -29,7 +30,21 @@ class SP500Universe(Universe):
     Handles loading raw historical constituent data and synthesizing membership intervals.
     """
 
-    identifier = "sp500"
+    def __init__(
+        self,
+        data_root: str = "./data",
+    ):
+        """
+        Initialize S&P 500 Universe Builder
+
+        Args:
+            data_root: Root directory for data storage (for curated and raw)
+        """
+        super().__init__(universe_name="sp500",
+                         exchange="us",
+                         currency="USD",
+                         data_root=data_root
+        )
 
     def get_members(self, as_of_date: str | None = None) -> List[str]:
         """
@@ -41,16 +56,12 @@ class SP500Universe(Universe):
         Returns:
             List of member ticker symbols
         """
-        return super().get_members(self.identifier, as_of_date)
+        return super().get_members(as_of_date)
 
     def get_current_members(self) -> List[str]:
-        return super().get_current_members(self.identifier)
+        return super().get_current_members()
 
-    def get_all_historical_members(
-        self,
-        start_date: str,
-        end_date: str
-    ) -> List[str]:
+    def get_all_historical_members(self, start_date: str, end_date: str) -> List[str]:
         """
         Get all historical S&P 500 members between start and end dates.
 
@@ -60,28 +71,7 @@ class SP500Universe(Universe):
         Returns:
             List of historical member ticker symbols
         """
-        return super().get_all_historical_members(
-            self.identifier,
-            start_date,
-            end_date
-        )
-
-    def __init__(
-        self,
-        config_path: Optional[str] = None,
-        data_root: str = "data/curated",
-        raw_data_root: str = "data/raw"
-    ):
-        """
-        Initialize S&P 500 Universe Builder
-
-        Args:
-            config_path: Path to universe configuration YAML file (optional)
-            data_root: Root directory for curated data storage
-            raw_data_root: Root directory for raw data files
-        """
-        super().__init__(config_path=config_path, data_root=data_root)
-        self.raw_data_root = Path(raw_data_root)
+        return super().get_all_historical_members(start_date, end_date)
 
     @staticmethod
     def load_and_explode_daily_membership(
@@ -176,10 +166,9 @@ class SP500Universe(Universe):
 
         return membership_intervals
 
-    def build_sp500_membership(
+    def build_membership(
         self,
         min_date: str = "2000-01-01",
-        universe_name: str = "sp500"
     ) -> dict:
         """
         Build S&P 500 membership datasets from raw historical data.
@@ -191,11 +180,12 @@ class SP500Universe(Universe):
         Returns:
             Dictionary with statistics and output paths
         """
+        raw_data_root = self.data_root / "raw"
         # Find raw CSV (flexible naming with date stamp)
-        raw_csv_files = list(self.raw_data_root.glob("S&P 500 Historical Components*.csv"))
+        raw_csv_files = list(raw_data_root.glob("S&P 500 Historical Components*.csv"))
         if not raw_csv_files:
             raise FileNotFoundError(
-                f"No S&P 500 historical CSV found in {self.raw_data_root}"
+                f"No S&P 500 historical CSV found in {raw_data_root}"
             )
 
         raw_csv_path = raw_csv_files[0]  # Use first match
@@ -210,13 +200,11 @@ class SP500Universe(Universe):
         membership_intervals = self.synthesize_membership_intervals(membership_daily)
 
         # Step 3: Write Snappy-compressed Parquet files using parent method
-        curated_membership_path = self.data_root / "membership" / f"universe={universe_name}"
+        daily_output = self.get_membership_path(mode='daily') / f"{self.name}_membership_daily.parquet"
+        intervals_output = self.get_membership_path(mode='intervals') / f"{self.name}_membership_intervals.parquet"
 
-        daily_output = curated_membership_path / "mode=daily" / f"{universe_name}_membership_daily.parquet"
-        intervals_output = curated_membership_path / "mode=intervals" / f"{universe_name}_membership_intervals.parquet"
-
-        self.write_snappy_parquet(membership_daily, daily_output)
-        self.write_snappy_parquet(membership_intervals, intervals_output)
+        self.write_parquet(membership_daily, daily_output)
+        self.write_parquet(membership_intervals, intervals_output)
 
         # Summary stats
         stats = {

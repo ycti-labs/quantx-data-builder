@@ -49,7 +49,7 @@ def example_multiple_symbols():
 
     # Fetch data for multiple symbols
     symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA']
-    results = fetcher.fetch_multiple(
+    results = fetcher.fetch_multiple_eod(
         symbols=symbols,
         start_date='2024-11-01',
         end_date='2024-11-08'

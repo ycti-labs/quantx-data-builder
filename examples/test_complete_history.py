@@ -67,7 +67,7 @@ def test_2_fetch_historical_sample():
     print(f"\n📥 Fetching sample: {sample_symbols}")
 
     # Fetch without saving (just to test)
-    results = fetcher.fetch_multiple(
+    results = fetcher.fetch_multiple_eod(
         symbols=sample_symbols,
         start_date='2024-01-01',
         end_date='2024-12-31',

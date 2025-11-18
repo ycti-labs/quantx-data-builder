@@ -11,13 +11,12 @@ universes:
 
 # Storage Configuration
 storage:
-  compression: "snappy"   # Parquet compression
+  local:   # Local storage (development)
+    root_path: "./data"
   azure:   # Azure Storage Account
     account_name: "stfinsightdata"
     container_name: "finsight-data"
     use_managed_identity: true
-  local:   # Local storage (development)
-    root_path: "./data"
 
 # Data Fetching Configuration
 fetcher:

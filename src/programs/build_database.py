@@ -22,9 +22,16 @@ def build_complete_database():
     print("=" * 80)
 
     config = FetcherConfig("config/settings.yaml")
+
+    sp500_universe = SP500Universe(
+        data_root="data/curated",
+        raw_data_root="data/raw"
+    )
+
     price_data_mgr = PriceDataManager(
         api_key=config.fetcher.tiingo.api_key,
-        data_root="data/curated"
+        data_root="data/curated",
+        universe=sp500_universe
     )
 
     print("\n⚠️  WARNING: This will fetch ALL historical SP500 members!")
@@ -34,28 +41,7 @@ def build_complete_database():
     # For demo, use small date range
     print("📥 Building database for SP500 (2014-2024)...")
 
-    sp500_universe = SP500Universe(
-        data_root="data/curated",
-        raw_data_root="data/raw"
-    )
-
-    symbols = sp500_universe.get_all_historical_members(
-        start_date='2014-01-01',
-        end_date='2024-12-31'
-    )
-
-    if not symbols:
-        print("No members found for S&P 500")
-        return
-
-    print(f"Total historical members to fetch: {len(symbols)}")
-
-    price_data_mgr.fetch_multiple(symbols, start_date='2014-01-01', end_date='2024-12-31')
-
-
-
     data = price_data_mgr.fetch_complete_universe_history(
-        universe='sp500',
         start_date='2014-01-01',
         end_date='2024-12-31',
         save_to_parquet=True,

@@ -213,10 +213,8 @@ __marimo__/
 
 # Project-specific
 # Data and logs
-data/
 logs/
-meta/*.csv
-meta/*.parquet
+data/
 
 # Local settings
 .env

@@ -19,6 +19,8 @@ import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_exponential
 from tiingo import TiingoClient
 
+from universe.universe import Universe
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,19 +41,16 @@ class PriceDataManager:
     def __init__(
         self,
         api_key: str,
-        data_root: str = "data/curated",
-        universe=None
+        universe: Universe,
     ):
         """
         Initialize price data manager
 
         Args:
             api_key: API key for data source (currently Tiingo)
-            data_root: Root directory for data storage (default: data/curated)
-            universe_builder: UniverseBuilder instance (optional, will create if not provided)
+            universe: Universe instance for membership and data root
         """
         self.api_key = api_key
-        self.data_root = Path(data_root)
         self.universe = universe
 
         # Initialize TiingoClient
@@ -144,7 +143,7 @@ class PriceDataManager:
                 return pd.DataFrame()
             raise
 
-    def fetch_multiple(
+    def fetch_multiple_eod(
         self,
         symbols: List[str],
         start_date: Optional[str] = None,
@@ -208,22 +207,20 @@ class PriceDataManager:
         symbols = self.universe.get_members(as_of_date)
 
         if not symbols:
-            self.logger.warning(f"No members found for {self.universe.identifier}")
+            self.logger.warning(f"No members found for {self.universe.name}")
             return {}
 
         self.logger.info(
-            f"Fetching data for {len(symbols)} symbols in {self.universe.identifier}"
+            f"Fetching data for {len(symbols)} symbols in {self.universe.name}"
         )
 
         # Fetch data for all symbols
-        return self.fetch_multiple(symbols, start_date, end_date, skip_errors)
+        return self.fetch_multiple_eod(symbols, start_date, end_date, skip_errors)
 
     def fetch_complete_universe_history(
         self,
         start_date: str,
         end_date: Optional[str] = None,
-        exchange: str = "us",
-        currency: str = "USD",
         skip_errors: bool = True,
         save_to_parquet: bool = True
     ) -> Dict[str, pd.DataFrame]:
@@ -241,8 +238,6 @@ class PriceDataManager:
         Args:
             start_date: Start date for price data in 'YYYY-MM-DD' format
             end_date: End date for price data (defaults to today)
-            exchange: Exchange code (default: 'us')
-            currency: Currency code (default: 'USD')
             skip_errors: If True, skip symbols that fail; if False, raise on error
             save_to_parquet: If True, automatically save to Parquet files
 
@@ -269,11 +264,11 @@ class PriceDataManager:
         )
 
         if not symbols:
-            self.logger.warning(f"No historical members found for {self.universe.identifier}")
+            self.logger.warning(f"No historical members found for {self.universe.name}")
             return {}
 
         self.logger.info(
-            f"Building complete historical database for {self.universe.identifier}: "
+            f"Building complete historical database for {self.universe.name}: "
             f"{len(symbols)} total symbols (current + historical)"
         )
 
@@ -284,15 +279,13 @@ class PriceDataManager:
                 symbols=symbols,
                 start_date=start_date,
                 end_date=end_date,
-                exchange=exchange,
-                currency=currency,
                 skip_errors=skip_errors
             )
             # Convert from (df, paths) tuples to just df
             return {symbol: df for symbol, (df, _) in results.items()}
         else:
             # Just fetch without saving
-            return self.fetch_multiple(
+            return self.fetch_multiple_eod(
                 symbols=symbols,
                 start_date=start_date,
                 end_date=end_date,
@@ -352,18 +345,18 @@ class PriceDataManager:
 
         # Use UniverseBuilder to get all historical members for the universe
         symbols = self.universe.get_all_historical_members(
-            start_date, 
+            start_date,
             end_date
         )
 
         if not symbols:
-            self.logger.warning(f"No historical members found for {self.universe.identifier}")
+            self.logger.warning(f"No historical members found for {self.universe.name}")
             return {}
 
         # Get membership intervals to determine required period per ticker
         intervals_path = (
-            f"data/curated/membership/universe={self.universe.identifier.lower()}/"
-            f"mode=intervals/{self.universe.identifier.lower()}_membership_intervals.parquet"
+            f"data/curated/membership/universe={self.universe.name.lower()}/"
+            f"mode=intervals/{self.universe.name.lower()}_membership_intervals.parquet"
         )
 
         try:
@@ -381,7 +374,7 @@ class PriceDataManager:
         total = len(symbols)
 
         self.logger.info(
-            f"Checking missing data for {total} symbols in {self.universe.identifier} "
+            f"Checking missing data for {total} symbols in {self.universe.name} "
             f"(period: {start_date} to {end_date}, tolerance: ±{tolerance_days} days)"
         )
 
@@ -419,8 +412,8 @@ class PriceDataManager:
                     symbol=symbol,
                     required_start=required_start_str,
                     required_end=required_end_str,
-                    exchange=exchange,
-                    currency=currency,
+                    exchange=self.universe.exchange,
+                    currency=self.universe.currency,
                     tolerance_days=tolerance_days
                 )
 
@@ -479,8 +472,6 @@ class PriceDataManager:
         self,
         df: pd.DataFrame,
         symbol: str,
-        exchange: str = "us",
-        currency: str = "USD"
     ) -> pd.DataFrame:
         """
         Transform Tiingo data to match the canonical price schema
@@ -488,8 +479,6 @@ class PriceDataManager:
         Args:
             df: Raw DataFrame from Tiingo API
             symbol: Ticker symbol
-            exchange: Exchange code (default: 'us')
-            currency: Currency code (default: 'USD')
 
         Returns:
             DataFrame with canonical schema
@@ -498,7 +487,7 @@ class PriceDataManager:
             return df
 
         # Generate ticker_id
-        ticker_id = self._generate_ticker_id(exchange, symbol)
+        ticker_id = self._generate_ticker_id(self.universe.exchange, symbol)
 
         # Create canonical DataFrame
         result = pd.DataFrame({
@@ -516,8 +505,8 @@ class PriceDataManager:
             'adj_volume': df['adjVolume'].astype('int64'),
             'div_cash': df['divCash'].astype(float),
             'split_factor': df['splitFactor'].astype(float),
-            'exchange': exchange,
-            'currency': currency,
+            'exchange': self.universe.exchange,
+            'currency': self.universe.currency,
             'freq': 'daily',
         })
 
@@ -530,8 +519,6 @@ class PriceDataManager:
         self,
         df: pd.DataFrame,
         symbol: str,
-        exchange: str = "us",
-        currency: str = "USD",
         adjusted: bool = True
     ) -> List[Path]:
         """
@@ -554,7 +541,7 @@ class PriceDataManager:
             return []
 
         # Transform to canonical schema
-        canonical_df = self._prepare_price_dataframe(df, symbol, exchange, currency)
+        canonical_df = self._prepare_price_dataframe(df, symbol)
 
         # Group by year and save separately
         saved_paths = []
@@ -563,9 +550,9 @@ class PriceDataManager:
         for year, year_df in canonical_df.groupby('year'):
             # Build path following Hive partitioning
             dir_path = (
-                self.data_root /
+                self.universe.data_root /
                 "prices" /
-                f"exchange={exchange}" /
+                f"exchange={self.universe.exchange}" /
                 f"ticker={symbol}" /
                 "freq=daily" /
                 f"adj={adj_str}" /
@@ -595,7 +582,7 @@ class PriceDataManager:
 
             saved_paths.append(file_path)
             self.logger.info(
-                f"✅ Saved {len(year_df)} rows to {file_path.relative_to(self.data_root.parent)}"
+                f"✅ Saved {len(year_df)} rows to {file_path.relative_to(self.universe.data_root.parent)}"
             )
 
         return saved_paths
@@ -605,8 +592,6 @@ class PriceDataManager:
         symbol: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        exchange: str = "us",
-        currency: str = "USD"
     ) -> Tuple[pd.DataFrame, List[Path]]:
         """
         Fetch data from Tiingo and save to Parquet files
@@ -615,8 +600,6 @@ class PriceDataManager:
             symbol: Ticker symbol
             start_date: Start date in 'YYYY-MM-DD' format
             end_date: End date in 'YYYY-MM-DD' format
-            exchange: Exchange code (default: 'us')
-            currency: Currency code (default: 'USD')
 
         Returns:
             Tuple of (DataFrame with fetched data, List of saved file paths)
@@ -628,7 +611,7 @@ class PriceDataManager:
             return df, []
 
         # Save to Parquet
-        saved_paths = self.save_price_data(df, symbol, exchange, currency)
+        saved_paths = self.save_price_data(df, symbol)
 
         return df, saved_paths
 
@@ -637,8 +620,6 @@ class PriceDataManager:
         symbols: List[str],
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        exchange: str = "us",
-        currency: str = "USD",
         skip_errors: bool = True
     ) -> Dict[str, Tuple[pd.DataFrame, List[Path]]]:
         """
@@ -648,8 +629,6 @@ class PriceDataManager:
             symbols: List of ticker symbols
             start_date: Start date in 'YYYY-MM-DD' format
             end_date: End date in 'YYYY-MM-DD' format
-            exchange: Exchange code (default: 'us')
-            currency: Currency code (default: 'USD')
             skip_errors: If True, skip symbols that error
 
         Returns:
@@ -660,7 +639,7 @@ class PriceDataManager:
         for symbol in symbols:
             try:
                 df, paths = self.fetch_and_save(
-                    symbol, start_date, end_date, exchange, currency
+                    symbol, start_date, end_date
                 )
                 if not df.empty:
                     results[symbol] = (df, paths)
@@ -693,9 +672,9 @@ class PriceDataManager:
         """
         adj_str = "true" if adjusted else "false"
         ticker_path = (
-            self.data_root /
+            self.universe.data_root /
             "prices" /
-            f"exchange={exchange}" /
+            f"exchange={self.universe.exchange}" /
             f"ticker={symbol}" /
             "freq=daily" /
             f"adj={adj_str}"
@@ -727,7 +706,6 @@ class PriceDataManager:
         symbol: str,
         required_start: str,
         required_end: str,
-        exchange: str = "us",
         tolerance_days: int = 2
     ) -> Dict:
         """
@@ -754,7 +732,7 @@ class PriceDataManager:
         req_end = pd.to_datetime(required_end).date()
 
         # Get existing date range
-        existing_range = self.get_existing_date_range(symbol, exchange)
+        existing_range = self.get_existing_date_range(symbol)
 
         if existing_range is None:
             # No data exists - need to fetch entire period
@@ -804,8 +782,6 @@ class PriceDataManager:
         symbol: str,
         required_start: str,
         required_end: str,
-        exchange: str = "us",
-        currency: str = "USD",
         tolerance_days: int = 2,
         force: bool = False
     ) -> Tuple[pd.DataFrame, List[Path]]:
@@ -831,10 +807,10 @@ class PriceDataManager:
         """
         if force:
             self.logger.info(f"Force fetch {symbol} for entire period {required_start} to {required_end}")
-            return self.fetch_and_save(symbol, required_start, required_end, exchange, currency)
+            return self.fetch_and_save(symbol, required_start, required_end)
 
         # Check what's missing
-        check = self.check_missing_data(symbol, required_start, required_end, exchange, tolerance_days)
+        check = self.check_missing_data(symbol, required_start, required_end, tolerance_days)
 
         if check['status'] == 'complete':
             self.logger.info(f"✅ {symbol} already has complete data (±{tolerance_days} days)")
@@ -842,7 +818,7 @@ class PriceDataManager:
 
         if check['status'] == 'missing':
             self.logger.info(f"📥 {symbol} has no data - fetching entire period")
-            return self.fetch_and_save(symbol, required_start, required_end, exchange, currency)
+            return self.fetch_and_save(symbol, required_start, required_end)
 
         # Partial data - fetch what's missing
         self.logger.info(
@@ -857,9 +833,7 @@ class PriceDataManager:
         if check['fetch_start'] and check['missing_start_days'] > tolerance_days:
             fetch_end_start = (check['actual_start'] - pd.Timedelta(days=1)).strftime('%Y-%m-%d')
             self.logger.info(f"  📥 Fetching start: {check['fetch_start']} to {fetch_end_start}")
-            df_start, paths_start = self.fetch_and_save(
-                symbol, check['fetch_start'], fetch_end_start, exchange, currency
-            )
+            df_start, paths_start = self.fetch_and_save(symbol, check['fetch_start'], fetch_end_start)
             if not df_start.empty:
                 all_fetched.append(df_start)
                 all_paths.extend(paths_start)
@@ -868,9 +842,7 @@ class PriceDataManager:
         if check['fetch_end'] and check['missing_end_days'] > tolerance_days:
             fetch_start_end = (check['actual_end'] + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
             self.logger.info(f"  📥 Fetching end: {fetch_start_end} to {check['fetch_end']}")
-            df_end, paths_end = self.fetch_and_save(
-                symbol, fetch_start_end, check['fetch_end'], exchange, currency
-            )
+            df_end, paths_end = self.fetch_and_save(symbol, fetch_start_end, check['fetch_end'])
             if not df_end.empty:
                 all_fetched.append(df_end)
                 all_paths.extend(paths_end)

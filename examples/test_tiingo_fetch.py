@@ -73,7 +73,7 @@ def test_price_data_builder():
         print("=" * 80)
         print("Test 3: Fetch Multiple Symbols (AAPL, MSFT, GOOGL)")
         print("=" * 80)
-        results = builder.fetch_multiple(
+        results = builder.fetch_multiple_eod(
             symbols=['AAPL', 'MSFT', 'GOOGL'],
             start_date='2024-11-01',
             end_date='2024-11-08'
