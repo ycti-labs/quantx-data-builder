@@ -1,0 +1,198 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "${AZURE_ENV_NAME}"
+    },
+    "resourceGroupName": {
+      "value": "${AZURE_RESOURCE_GROUP}"
+    },
+    "location": {
+      "value": "${AZURE_LOCATION}"
+    },
+    "principalId": {
+      "value": "${AZURE_PRINCIPAL_ID}"
+    },
+    "visionServiceName": {
+      "value": "${AZURE_VISION_SERVICE}"
+    },
+    "visionResourceGroupName": {
+      "value": "${AZURE_VISION_RESOURCE_GROUP}"
+    },
+    "visionResourceGroupLocation": {
+      "value": "${AZURE_VISION_LOCATION=eastus}"
+    },
+    "contentUnderstandingServiceName": {
+      "value": "${AZURE_CONTENT_UNDERSTANDING_SERVICE}"
+    },
+    "contentUnderstandingResourceGroupName": {
+      "value": "${AZURE_CONTENT_UNDERSTANDING_RESOURCE_GROUP}"
+    },
+    "documentIntelligenceServiceName": {
+      "value": "${AZURE_DOCUMENTINTELLIGENCE_SERVICE}"
+    },
+    "documentIntelligenceResourceGroupName": {
+      "value": "${AZURE_DOCUMENTINTELLIGENCE_RESOURCE_GROUP}"
+    },
+    "documentIntelligenceSkuName": {
+      "value": "${AZURE_DOCUMENTINTELLIGENCE_SKU=S0}"
+    },
+    "documentIntelligenceResourceGroupLocation": {
+      "value": "${AZURE_DOCUMENTINTELLIGENCE_LOCATION}"
+    },
+    "storageAccountName": {
+      "value": "${AZURE_STORAGE_ACCOUNT}"
+    },
+    "storageResourceGroupName": {
+      "value": "${AZURE_STORAGE_RESOURCE_GROUP}"
+    },
+    "storageSkuName": {
+      "value": "${AZURE_STORAGE_SKU=Standard_LRS}"
+    },
+    "backendServiceName": {
+      "value": "${AZURE_APP_SERVICE}"
+    },
+    "useApplicationInsights": {
+      "value": "${AZURE_USE_APPLICATION_INSIGHTS=true}"
+    },
+    "applicationInsightsName": {
+      "value": "${AZURE_APPLICATION_INSIGHTS}"
+    },
+    "applicationInsightsDashboardName": {
+      "value": "${AZURE_APPLICATION_INSIGHTS_DASHBOARD}"
+    },
+    "logAnalyticsName": {
+      "value": "${AZURE_LOG_ANALYTICS}"
+    },
+    "useVectors": {
+      "value": "${USE_VECTORS=true}"
+    },
+    "useMultimodal": {
+      "value": "${USE_MULTIMODAL=false}"
+    },
+    "useEval": {
+      "value": "${USE_EVAL=false}"
+    },
+    "enableLanguagePicker": {
+      "value": "${ENABLE_LANGUAGE_PICKER=false}"
+    },
+    "useSpeechInputBrowser": {
+      "value": "${USE_SPEECH_INPUT_BROWSER=false}"
+    },
+    "useSpeechOutputBrowser": {
+      "value": "${USE_SPEECH_OUTPUT_BROWSER=false}"
+    },
+    "useSpeechOutputAzure": {
+      "value": "${USE_SPEECH_OUTPUT_AZURE=false}"
+    },
+    "speechServiceName": {
+      "value": "${AZURE_SPEECH_SERVICE}"
+    },
+    "speechServiceSkuName": {
+      "value": "${AZURE_SPEECH_SERVICE_SKU=S0}"
+    },
+    "speechServiceResourceGroupName": {
+      "value": "${AZURE_SPEECH_SERVICE_RESOURCE_GROUP}"
+    },
+    "speechServiceLocation": {
+      "value": "${AZURE_SPEECH_SERVICE_LOCATION}"
+    },
+    "useChatHistoryBrowser": {
+      "value": "${USE_CHAT_HISTORY_BROWSER=false}"
+    },
+    "speechServiceVoice": {
+      "value": "${AZURE_SPEECH_SERVICE_VOICE}"
+    },
+    "useAuthentication": {
+      "value": "${AZURE_USE_AUTHENTICATION=false}"
+    },
+    "enforceAccessControl": {
+      "value": "${AZURE_ENFORCE_ACCESS_CONTROL=false}"
+    },
+    "enableGlobalDocuments": {
+      "value": "${AZURE_ENABLE_GLOBAL_DOCUMENT_ACCESS=false}"
+    },
+    "enableUnauthenticatedAccess": {
+      "value": "${AZURE_ENABLE_UNAUTHENTICATED_ACCESS=false}"
+    },
+    "authTenantId": {
+      "value": "${AZURE_AUTH_TENANT_ID}"
+    },
+    "serverAppId": {
+      "value": "${AZURE_SERVER_APP_ID}"
+    },
+    "serverAppSecret": {
+      "value": "${AZURE_SERVER_APP_SECRET}"
+    },
+    "clientAppId": {
+      "value": "${AZURE_CLIENT_APP_ID}"
+    },
+    "clientAppSecret": {
+      "value": "${AZURE_CLIENT_APP_SECRET}"
+    },
+    "allowedOrigin": {
+      "value": "${ALLOWED_ORIGIN}"
+    },
+    "publicNetworkAccess": {
+      "value": "${AZURE_PUBLIC_NETWORK_ACCESS=Enabled}"
+    },
+    "usePrivateEndpoint": {
+      "value": "${AZURE_USE_PRIVATE_ENDPOINT=false}"
+    },
+    "useVpnGateway": {
+      "value": "${AZURE_USE_VPN_GATEWAY=false}"
+    },
+    "bypass": {
+      "value": "${AZURE_NETWORK_BYPASS=AzureServices}"
+    },
+    "useIntegratedVectorization": {
+      "value": "${USE_FEATURE_INT_VECTORIZATION}"
+    },
+    "useUserUpload": {
+      "value": "${USE_USER_UPLOAD}"
+    },
+    "useLocalPdfParser": {
+      "value": "${USE_LOCAL_PDF_PARSER}"
+    },
+    "useLocalHtmlParser": {
+      "value": "${USE_LOCAL_HTML_PARSER}"
+    },
+    "runningOnGh": {
+      "value": "${GITHUB_ACTIONS}"
+    },
+    "runningOnAdo": {
+      "value": "${TF_BUILD}"
+    },
+    "deploymentTarget": {
+      "value": "${DEPLOYMENT_TARGET=containerapps}"
+    },
+    "webAppExists": {
+      "value": "${SERVICE_WEB_RESOURCE_EXISTS=false}"
+    },
+    "azureContainerAppsWorkloadProfile": {
+      "value": "${AZURE_CONTAINER_APPS_WORKLOAD_PROFILE=Consumption}"
+    },
+    "useMediaDescriberAzureCU": {
+      "value": "${USE_MEDIA_DESCRIBER_AZURE_CU=false}"
+    },
+    "useAiProject": {
+      "value": "${USE_AI_PROJECT=false}"
+    },
+    "useAgenticRetrieval": {
+      "value": "${USE_AGENTIC_RETRIEVAL=false}"
+    },
+    "ragSearchTextEmbeddings": {
+      "value": "${RAG_SEARCH_TEXT_EMBEDDINGS=true}"
+    },
+    "ragSearchImageEmbeddings": {
+      "value": "${RAG_SEARCH_IMAGE_EMBEDDINGS=true}"
+    },
+    "ragSendTextSources": {
+      "value": "${RAG_SEND_TEXT_SOURCES=true}"
+    },
+    "ragSendImageSources": {
+      "value": "${RAG_SEND_IMAGE_SOURCES=true}"
+    }
+  }
+}

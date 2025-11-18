@@ -1,10 +1,9 @@
 {
     "name": "QuantX Data Builder",
-    "dockerComposeFile": "docker-compose.yml",
-    "service": "app",
-    "workspaceFolder": "/workspaces/quantx-data-builder",
-
-    // Features to install
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
     "features": {
         "ghcr.io/devcontainers/features/azure-cli:1": {
             "version": "latest"
@@ -18,40 +17,24 @@
         },
         "ghcr.io/azure/azure-dev/azd:latest": {}
     },
-
-    // Configure tool-specific properties
     "customizations": {
         "vscode": {
-            // Set *default* container specific settings.json values on container create
             "settings": {
-                "python.defaultInterpreterPath": "/usr/local/bin/python",
-                "python.analysis.typeCheckingMode": "basic",
-                "python.linting.enabled": true,
-                "python.linting.pylintEnabled": false,
-                "python.linting.flake8Enabled": false,
-                "python.linting.mypyEnabled": true,
-                "python.linting.mypyArgs": [
-                    "--ignore-missing-imports",
-                    "--follow-imports=silent"
-                ],
-                "python.formatting.provider": "black",
-                "python.formatting.blackPath": "/usr/local/bin/black",
+                "python.analysis.typeCheckingMode": "standard",
+                "python.analysis.extraPaths": ["${workspaceFolder}/src"],
+                "python.analysis.diagnosticSeverityOverrides": {
+                    "reportUnusedImport": "warning",
+                    "reportUnusedVariable": "warning",
+                    "reportDuplicateImport": "warning",
+                    "reportPrivateUsage": "warning",
+                    "reportConstantRedefinition": "error",
+                    "reportMissingTypeStubs": "none"
+                },
                 "python.testing.pytestEnabled": true,
-                "python.testing.unittestEnabled": false,
-                "python.testing.pytestArgs": [
-                    "tests"
-                ],
                 "editor.formatOnSave": true,
                 "editor.codeActionsOnSave": {
                     "source.organizeImports": "explicit"
                 },
-                "files.exclude": {
-                    "**/__pycache__": true,
-                    "**/.pytest_cache": true,
-                    "**/.mypy_cache": true,
-                    "**/*.pyc": true
-                },
-                "terminal.integrated.defaultProfile.linux": "bash",
                 "[python]": {
                     "editor.formatOnSave": true,
                     "editor.codeActionsOnSave": {
@@ -59,54 +42,40 @@
                     }
                 }
             },
-
-            // Add the IDs of extensions you want installed when the container is created
             "extensions": [
                 "ms-python.python",
-                "ms-python.vscode-pylance",
+                "ms-python.pylance",
                 "ms-python.black-formatter",
-                "ms-azuretools.vscode-azurefunctions",
-                "ms-azuretools.vscode-docker",
-                "ms-vscode.azure-account",
-                "ms-azuretools.vscode-azurecontainerapps",
-                "ms-azuretools.vscode-azurestorage",
+                "ms-python.isort",
+                "charliermarsh.ruff",
                 "ms-azuretools.azure-dev",
                 "ms-azuretools.vscode-bicep",
                 "GitHub.copilot",
                 "GitHub.copilot-chat",
-                "DavidAnson.vscode-markdownlint"
+                "esbenp.prettier-vscode",
+                "DavidAnson.vscode-markdownlint",
+                "tamasfe.even-better-toml",
+                "redhat.vscode-yaml"
             ]
         }
     },
-
-    // Use 'forwardPorts' to make a list of ports inside the container available locally
-    "forwardPorts": [7071, 50505],
-
-    // Use 'postCreateCommand' to run commands after the container is created
-    "postCreateCommand": "bash .devcontainer/post-create.sh",
-
-    // Use 'postStartCommand' to run commands after the container starts
-    "postStartCommand": "git config --global --add safe.directory /workspaces/quantx-data-builder",
-
-    // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root
-    "remoteUser": "vscode",
-
-    // Environment variables
+    "forwardPorts": [7071, 8080],
+    "portsAttributes": {
+        "7071": {
+            "label": "Azure Functions",
+            "onAutoForward": "notify"
+        },
+        "8080": {
+            "label": "HTTP Server",
+            "onAutoForward": "silent"
+        }
+    },
     "containerEnv": {
-        "PYTHONUNBUFFERED": "1",
-        "PYTHONDONTWRITEBYTECODE": "1",
-        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
         "AZURE_FUNCTIONS_ENVIRONMENT": "Development"
     },
-
-    // Mount points for Azure credentials and cache
-    "mounts": [
-        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.azure,target=/home/vscode/.azure,type=bind,consistency=cached"
-    ],
-
-    // Host requirements
+    "postCreateCommand": "bash .devcontainer/post-create.sh",
+    "remoteUser": "vscode",
     "hostRequirements": {
-        "memory": "8gb",
-        "cpus": 4
+        "memory": "8gb"
     }
 }

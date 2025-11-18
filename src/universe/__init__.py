@@ -1,6 +1,6 @@
 """Universe management and building"""
 
-from .universe_builder import UniverseBuilder
-from .config_loader import UniverseConfig
+from .sp500_universe import SP500Universe
+from .universe import Universe
 
-__all__ = ["UniverseBuilder", "UniverseConfig"]
+__all__ = ["Universe", "SP500Universe"]

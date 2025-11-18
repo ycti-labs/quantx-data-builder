@@ -4,12 +4,13 @@ This is the single source of truth for all data fetching logic
 Used by both Azure Functions and Container Apps
 """
 
-import yfinance as yf
-import pandas as pd
-from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timedelta
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple
+
+import pandas as pd
+import yfinance as yf
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ class DataOperations:
     def __init__(self, storage, max_workers: int = 10):
         """
         Initialize data operations
-        
+
         Args:
             storage: Storage implementation (AzureBlobStorage or LocalStorage)
             max_workers: Maximum number of concurrent workers for parallel downloads
@@ -41,11 +42,11 @@ class DataOperations:
         """
         Fetch incremental daily data (last N days)
         Optimized for daily scheduled updates
-        
+
         Args:
             symbols: List of ticker symbols to fetch
             lookback_days: Number of days to look back (default 5 to handle weekends)
-            
+
         Returns:
             Dictionary with success/failure statistics
         """
@@ -56,7 +57,7 @@ class DataOperations:
             f"📊 Fetching incremental data for {len(symbols)} symbols "
             f"from {start_date} to {end_date}"
         )
-        
+
         return self._fetch_batch(symbols, start_date, end_date)
 
     def fetch_backfill(
@@ -69,13 +70,13 @@ class DataOperations:
         """
         Fetch historical data in chunks
         Optimized for long-running backfill operations
-        
+
         Args:
             symbols: List of ticker symbols to fetch
             start_date: Start date in YYYY-MM-DD format
             end_date: End date in YYYY-MM-DD format
             chunk_size: Number of symbols to process per chunk
-            
+
         Returns:
             Dictionary with success/failure statistics
         """
@@ -98,7 +99,7 @@ class DataOperations:
 
         for idx, chunk in enumerate(symbol_chunks):
             self.logger.info(f"Processing chunk {idx + 1}/{len(symbol_chunks)}")
-            
+
             chunk_results = self._fetch_batch(chunk, start, end)
 
             total_results["success"] += chunk_results["success"]
@@ -110,24 +111,24 @@ class DataOperations:
             f"✅ Backfill complete: {total_results['success']} succeeded, "
             f"{total_results['failed']} failed, {total_results['skipped']} skipped"
         )
-        
+
         return total_results
 
     def refresh_universe(self, phase: str = "phase_1") -> List[str]:
         """
         Refresh stock universe from configured sources
-        
+
         Args:
             phase: Universe phase name (e.g., "phase_1", "phase_2")
-            
+
         Returns:
             List of all symbols in the refreshed universe
         """
-        from src.universe.universe_builder import UniverseBuilder
+        from src.universe.universe_builder import Universe
 
         self.logger.info(f"🔄 Refreshing universe for {phase}")
-        
-        builder = UniverseBuilder()
+
+        builder = Universe()
         universes = builder.build_phase(phase)
 
         # Save to storage
@@ -157,12 +158,12 @@ class DataOperations:
     ) -> Dict:
         """
         Internal method to fetch a batch of symbols in parallel
-        
+
         Args:
             symbols: List of ticker symbols
             start_date: Start date
             end_date: End date
-            
+
         Returns:
             Dictionary with success/failure statistics
         """
@@ -214,12 +215,12 @@ class DataOperations:
     ) -> str:
         """
         Fetch and save data for a single symbol with retry logic
-        
+
         Args:
             symbol: Ticker symbol
             start_date: Start date
             end_date: End date
-            
+
         Returns:
             Status string: "success", "skipped", or "failed"
         """
@@ -227,7 +228,7 @@ class DataOperations:
             # Determine exchange and format path
             exchange = self._get_exchange(symbol)
             ticker_formatted = symbol.replace('.', '_')
-            
+
             # Fetch data from yfinance
             ticker = yf.Ticker(symbol)
             df = ticker.history(
@@ -249,13 +250,13 @@ class DataOperations:
             # Path format: data/exchange=<us|hk>/ticker=<SYMBOL>/year=YYYY/part-*.parquet
             year = start_date.year
             output_path = f"data/exchange={exchange}/ticker={ticker_formatted}/year={year}/data.parquet"
-            
+
             # Append to existing data if file exists
             if self.storage.exists(output_path):
                 existing_df = self.storage.load_dataframe(output_path)
                 df = pd.concat([existing_df, df]).drop_duplicates(subset=['Date'], keep='last')
                 df = df.sort_index()
-            
+
             self.storage.save_dataframe(df, output_path)
 
             self.logger.info(f"✅ Fetched {len(df)} rows for {symbol}")
@@ -268,25 +269,25 @@ class DataOperations:
     def _get_exchange(self, symbol: str) -> str:
         """
         Determine exchange from symbol format
-        
+
         Args:
             symbol: Ticker symbol
-            
+
         Returns:
             Exchange code (e.g., "us", "hk", "jp")
         """
         # Hong Kong stocks typically have 4-digit codes
         if symbol.isdigit() and len(symbol) == 4:
             return "hk"
-        
+
         # Symbols ending in .HK
         if symbol.endswith('.HK'):
             return "hk"
-        
+
         # Symbols ending in .T (Tokyo)
         if symbol.endswith('.T'):
             return "jp"
-        
+
         # Default to US
         return "us"
 
@@ -299,7 +300,7 @@ class DataOperations:
     ) -> None:
         """
         Update symbols manifest with latest fetch information
-        
+
         Args:
             symbol: Ticker symbol
             last_date: Last date of available data

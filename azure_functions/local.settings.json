@@ -1,9 +1,9 @@
 {
   "IsEncrypted": false,
   "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;AccountName=quantxdata;AccountKey=+slpgjjSgzYgbim40jpeUfGtTVOd9RN6P+Csu+pk8+K3gRaN6A588Wnc8t3Ai9d6OKDr80enaBZo+ASt9g3ATg==;EndpointSuffix=core.windows.net",
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "AZURE_STORAGE_ACCOUNT": "stfinsightdata",
+    "AZURE_STORAGE_ACCOUNT": "quantxdata",
     "AZURE_CONTAINER_NAME": "finsight-data",
     "MAX_WORKERS": "10",
     "LOOKBACK_DAYS": "5",
