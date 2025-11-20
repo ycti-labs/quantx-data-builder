@@ -10,14 +10,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.market_data import FetcherConfig, PriceDataManager
+from src.core.config import Config
+from src.market_data import PriceDataManager
 
 
 def setup_fetcher():
     """Initialize fetcher with config"""
-    config = FetcherConfig("config/settings.yaml")
+    config = Config("config/settings.yaml")
     return PriceDataManager(
-        api_key=config.fetcher.tiingo.api_key,
+        api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
 

@@ -11,7 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.market_data import FetcherConfig, PriceDataManager
+from src.core.config import Config
+from src.market_data import PriceDataManager
 
 
 def test_1_current_vs_historical():
@@ -20,8 +21,8 @@ def test_1_current_vs_historical():
     print("Test 1: Current vs All Historical Members")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
-    fetcher = PriceDataManager(api_key=config.fetcher.tiingo.api_key)
+    config = Config("config/settings.yaml")
+    fetcher = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))
 
     # Get current members only
     current = fetcher.get_current_members('sp500')
@@ -52,8 +53,8 @@ def test_2_fetch_historical_sample():
     print("Test 2: Fetch Historical Data Sample")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
-    fetcher = PriceDataManager(api_key=config.fetcher.tiingo.api_key)
+    config = Config("config/settings.yaml")
+    fetcher = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))
 
     # Get all historical members
     all_members = fetcher.get_all_historical_members(
@@ -87,9 +88,9 @@ def test_3_build_complete_database():
     print("Test 3: Build Complete Historical Database")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
+    config = Config("config/settings.yaml")
     fetcher = PriceDataManager(
-        api_key=config.fetcher.tiingo.api_key,
+        api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
 
@@ -128,8 +129,8 @@ def test_4_survivorship_bias_example():
     print("Test 4: Survivorship Bias Example")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
-    fetcher = PriceDataManager(api_key=config.fetcher.tiingo.api_key)
+    config = Config("config/settings.yaml")
+    fetcher = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))
 
     print("\n🎯 Scenario: Backtesting a strategy from 2020-2024")
     print()

@@ -12,7 +12,8 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.market_data import FetcherConfig, PriceDataManager
+from src.core.config import Config
+from src.market_data import PriceDataManager
 
 # Configure logging
 logging.basicConfig(
@@ -33,14 +34,14 @@ def test_price_data_builder():
 
     try:
         # Load configuration
-        config = FetcherConfig("config/settings.yaml")
+        config = Config("config/settings.yaml")
         logger.info(f"✅ Configuration loaded")
-        logger.info(f"   API Key: {config.fetcher.tiingo.api_key[:10]}...")
+        logger.info(f"   API Key: {config.get("fetcher.tiingo.api_key")[:10]}...")
         print()
 
         # Create market data builder
         builder = PriceDataManager(
-            api_key=config.fetcher.tiingo.api_key
+            api_key=config.get("fetcher.tiingo.api_key")
         )
         logger.info(f"✅ PriceDataManager created")
         print()

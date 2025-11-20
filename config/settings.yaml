@@ -1,15 +1,17 @@
-universes:
-  SP500:
-    - enable: true
-    - start_date: "2014-01-01"
-  NASDAQ100:
-    - enable: false
-    - start_date: "2014-01-01"
-  RUSSELL2000:
-    - enable: false
-    - start_date: "2014-01-01"
+universe:
+  sp500:
+    auto: true
+    start_date: "2014-01-01"
+    end_date: "2024-12-31"
+  nasdaq100:
+    auto: false
+    start_date: "2014-01-01"
+    end_date: "2024-12-31"
+  russell2000:
+    auto: false
+    start_date: "2014-01-01"
+    end_date: "2024-12-31"
 
-# Storage Configuration
 storage:
   local:   # Local storage (development)
     root_path: "./data"
@@ -18,12 +20,9 @@ storage:
     container_name: "finsight-data"
     use_managed_identity: true
 
-# Data Fetching Configuration
 fetcher:
-  # Tiingo API Configuration
   tiingo:
     api_key: "a4bc193abdeb46e64975469cb3a54006b13c25ac"
-
   max_workers: 10
   lookback_days: 5
   # Chunk size for backfill operations

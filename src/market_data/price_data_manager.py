@@ -19,7 +19,7 @@ import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_exponential
 from tiingo import TiingoClient
 
-from universe.universe import Universe
+from universe import Universe
 
 logger = logging.getLogger(__name__)
 
@@ -412,8 +412,6 @@ class PriceDataManager:
                     symbol=symbol,
                     required_start=required_start_str,
                     required_end=required_end_str,
-                    exchange=self.universe.exchange,
-                    currency=self.universe.currency,
                     tolerance_days=tolerance_days
                 )
 
@@ -854,12 +852,85 @@ class PriceDataManager:
         else:
             return pd.DataFrame(), all_paths
 
+    def fetch_missing_with_correction(
+        self,
+        symbol: str,
+        required_start: str,
+        required_end: str,
+        tolerance_days: int = 2,
+        force: bool = False
+    ) -> Tuple[pd.DataFrame, List[Path], Optional[str]]:
+        """
+        Intelligently fetch missing data with automatic ticker correction
+
+        If the original ticker fails or has no data, tries alternative tickers
+        based on gvkey mapping from the universe (e.g., ANTM -> ELV, FB -> META).
+
+        Args:
+            symbol: Ticker symbol to fetch
+            required_start: Required start date in 'YYYY-MM-DD' format
+            required_end: Required end date in 'YYYY-MM-DD' format
+            tolerance_days: Ignore gaps of this many days or less (default: 2)
+            force: If True, fetch entire period regardless of existing data
+
+        Returns:
+            Tuple of (DataFrame with fetched data, List of saved file paths, corrected_ticker or None)
+
+        Example:
+            # Try fetching ANTM, if it fails, automatically tries ELV
+            df, paths, corrected = manager.fetch_missing_with_correction(
+                'ANTM', '2020-01-01', '2024-12-31'
+            )
+            if corrected:
+                print(f"Used corrected ticker: {corrected} instead of ANTM")
+        """
+        # First try with original symbol
+        try:
+            df, paths = self.fetch_missing_data(
+                symbol, required_start, required_end, tolerance_days, force
+            )
+
+            # If we got data, return it
+            if not df.empty or paths:
+                return df, paths, None
+
+        except Exception as e:
+            self.logger.warning(f"Failed to fetch {symbol}: {e}")
+
+        # If original failed or returned nothing, try corrections
+        corrections = self.universe.get_ticker_corrections()
+
+        if symbol not in corrections:
+            self.logger.info(f"No ticker corrections available for {symbol}")
+            return pd.DataFrame(), [], None
+
+        # Try each alternative ticker
+        alternatives = corrections[symbol]
+        self.logger.info(f"Trying {len(alternatives)} alternative ticker(s) for {symbol}: {alternatives}")
+
+        for alt_ticker in alternatives:
+            try:
+                self.logger.info(f"  Trying corrected ticker: {alt_ticker}")
+                df, paths = self.fetch_missing_data(
+                    alt_ticker, required_start, required_end, tolerance_days, force
+                )
+
+                if not df.empty or paths:
+                    self.logger.info(f"✅ Successfully used corrected ticker {alt_ticker} for {symbol}")
+                    return df, paths, alt_ticker
+
+            except Exception as e:
+                self.logger.warning(f"  Failed with {alt_ticker}: {e}")
+                continue
+
+        self.logger.warning(f"All ticker corrections failed for {symbol}")
+        return pd.DataFrame(), [], None
+
     def load_price_data(
         self,
         symbol: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        exchange: str = "us",
         adjusted: bool = True
     ) -> pd.DataFrame:
         """
@@ -879,9 +950,9 @@ class PriceDataManager:
 
         # Path to ticker directory
         ticker_path = (
-            self.data_root /
+            self.universe.data_root /
             "prices" /
-            f"exchange={exchange}" /
+            f"exchange={self.universe.exchange}" /
             f"ticker={symbol}" /
             "freq=daily" /
             f"adj={adj_str}"

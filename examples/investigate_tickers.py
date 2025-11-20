@@ -12,7 +12,8 @@ from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.market_data import FetcherConfig, PriceDataManager
+from src.core.config import Config
+from src.market_data import PriceDataManager
 
 # Known ticker changes and corporate actions for S&P 500 companies
 TICKER_HISTORY = {
@@ -389,10 +390,11 @@ def generate_fetch_commands(missing_symbols: List[str]):
     print("=" * 80)
     print()
     print("```python")
-    print("from src.market_data import FetcherConfig, PriceDataManager")
+    print("from src.core.config import Config
+from src.market_data import PriceDataManager")
     print()
-    print("config = FetcherConfig('config/settings.yaml')")
-    print("builder = PriceDataManager(api_key=config.fetcher.tiingo.api_key)")
+    print("config = Config('config/settings.yaml')")
+    print("builder = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))")
     print()
     print("# Fetch with new tickers")
     print(f"fetch_these = {fetch_list}")

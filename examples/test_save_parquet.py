@@ -10,7 +10,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.market_data import FetcherConfig, PriceDataManager
+from src.core.config import Config
+from src.market_data import PriceDataManager
 
 
 def test_save_single_symbol():
@@ -19,9 +20,9 @@ def test_save_single_symbol():
     print("Test 1: Fetch and Save Single Symbol (AAPL)")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
+    config = Config("config/settings.yaml")
     fetcher = PriceDataManager(
-        api_key=config.fetcher.tiingo.api_key,
+        api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
 
@@ -47,9 +48,9 @@ def test_save_multiple_symbols():
     print("Test 2: Fetch and Save Multiple Symbols")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
+    config = Config("config/settings.yaml")
     fetcher = PriceDataManager(
-        api_key=config.fetcher.tiingo.api_key,
+        api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
 
@@ -75,9 +76,9 @@ def test_load_saved_data():
     print("Test 3: Load Saved Data from Parquet")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
+    config = Config("config/settings.yaml")
     fetcher = PriceDataManager(
-        api_key=config.fetcher.tiingo.api_key,
+        api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
 
@@ -108,9 +109,9 @@ def test_incremental_update():
     print("Test 4: Incremental Update (Append)")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
+    config = Config("config/settings.yaml")
     fetcher = PriceDataManager(
-        api_key=config.fetcher.tiingo.api_key,
+        api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
 
@@ -193,9 +194,9 @@ def verify_schema():
     print("Test 6: Verify Canonical Schema")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
+    config = Config("config/settings.yaml")
     fetcher = PriceDataManager(
-        api_key=config.fetcher.tiingo.api_key,
+        api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
 

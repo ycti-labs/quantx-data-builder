@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +21,12 @@ class Universe(ABC):
     Also provides membership query functionality
     """
 
-    def __init__(self, 
+    def __init__(self,
                 universe_name: str,
                  exchange: str,
                  currency: str,
-                 data_root: str = "./data"
+                 data_root: str = "./data",
+                 etf_ticker: str = ""
     ):
         """
         Initialize universe builder
@@ -124,6 +124,65 @@ class Universe(ABC):
             List of current member ticker symbols
         """
         return self.get_members(as_of_date=None)
+
+    def get_ticker_corrections(self) -> Dict[str, List[str]]:
+        """
+        Get ticker correction mapping from membership data
+
+        Uses the gvkey column in membership intervals to find alternative
+        ticker symbols for the same company (same gvkey), including historical
+        ticker changes (e.g., ANTM -> ELV, FB -> META).
+
+        Returns:
+            Dictionary mapping ticker -> list of alternative tickers
+            Example: {'ANTM': ['ELV'], 'FB': ['META'], 'ELV': ['ANTM']}
+        """
+        intervals_path = self.get_membership_path(mode='intervals') / f"{self.name.lower()}_membership_intervals.parquet"
+
+        try:
+            # Read membership with gvkey
+            df = pd.read_parquet(intervals_path)
+
+            if 'gvkey' not in df.columns:
+                logger.warning(f"No gvkey column in {intervals_path}, cannot provide ticker corrections")
+                return {}
+
+            # Remove rows without gvkey
+            df = df[df['gvkey'].notna()].copy()
+
+            # Convert dates for sorting
+            df['start_date'] = pd.to_datetime(df['start_date'])
+            df['end_date'] = pd.to_datetime(df['end_date'])
+
+            # Group by gvkey to find all tickers for same company
+            corrections = {}
+            for gvkey, group in df.groupby('gvkey'):
+                # Sort by start_date to get chronological order
+                group = group.sort_values('start_date')
+                tickers = group['ticker'].unique().tolist()
+
+                # If same company has multiple tickers (ticker changes over time)
+                if len(tickers) > 1:
+                    # Each ticker can be corrected to any other ticker with same gvkey
+                    for ticker in tickers:
+                        alternatives = [t for t in tickers if t != ticker]
+                        if alternatives:
+                            corrections[ticker] = alternatives
+
+            if corrections:
+                logger.info(f"Loaded {len(corrections)} ticker corrections from gvkey mapping")
+                # Log some examples
+                examples = list(corrections.items())[:5]
+                for ticker, alts in examples:
+                    logger.info(f"  {ticker} -> {alts}")
+            else:
+                logger.info("No ticker corrections found (all tickers are unique per gvkey)")
+
+            return corrections
+
+        except Exception as e:
+            logger.warning(f"Could not load ticker corrections: {e}")
+            return {}
 
     def get_all_historical_members(
         self,

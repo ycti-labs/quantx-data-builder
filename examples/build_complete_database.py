@@ -12,7 +12,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.market_data import FetcherConfig, PriceDataManager
+from src.core.config import Config
+from src.market_data import PriceDataManager
 
 
 def build_sp500_database(start_year: int, end_year: int):
@@ -30,9 +31,9 @@ def build_sp500_database(start_year: int, end_year: int):
     print(f"Building Complete S&P 500 Database: {start_year}-{end_year}")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
+    config = Config("config/settings.yaml")
     fetcher = PriceDataManager(
-        api_key=config.fetcher.tiingo.api_key,
+        api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
 
@@ -133,9 +134,9 @@ def build_incremental_update():
     print("Incremental Update - S&P 500 Latest Data")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
+    config = Config("config/settings.yaml")
     fetcher = PriceDataManager(
-        api_key=config.fetcher.tiingo.api_key,
+        api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
 
@@ -175,9 +176,9 @@ def build_sample_database():
     print("Build Sample Database - Quick Test")
     print("=" * 80)
 
-    config = FetcherConfig("config/settings.yaml")
+    config = Config("config/settings.yaml")
     fetcher = PriceDataManager(
-        api_key=config.fetcher.tiingo.api_key,
+        api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
 

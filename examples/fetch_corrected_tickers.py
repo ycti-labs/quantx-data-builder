@@ -11,7 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.market_data import FetcherConfig, PriceDataManager
+from src.core.config import Config
+from src.market_data import PriceDataManager
 
 
 def main():
@@ -25,8 +26,8 @@ def main():
 
     # Load config
     try:
-        config = FetcherConfig("config/settings.yaml")
-        api_key = config.fetcher.tiingo.api_key
+        config = Config("config/settings.yaml")
+        api_key = config.get("fetcher.tiingo.api_key")
     except Exception as e:
         print(f"❌ Error loading config: {e}")
         return 1

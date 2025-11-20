@@ -19,7 +19,7 @@ from typing import List, Optional
 
 import pandas as pd
 
-from universe import Universe
+from .universe import Universe
 
 
 class SP500Universe(Universe):
@@ -43,35 +43,9 @@ class SP500Universe(Universe):
         super().__init__(universe_name="sp500",
                          exchange="us",
                          currency="USD",
-                         data_root=data_root
+                         data_root=data_root,
+                         etf_ticker="SPY",
         )
-
-    def get_members(self, as_of_date: str | None = None) -> List[str]:
-        """
-        Get S&P 500 universe members (as of given date or current)
-
-        Args:
-            as_of_date: ISO date string (YYYY-MM-DD) or None for current members
-
-        Returns:
-            List of member ticker symbols
-        """
-        return super().get_members(as_of_date)
-
-    def get_current_members(self) -> List[str]:
-        return super().get_current_members()
-
-    def get_all_historical_members(self, start_date: str, end_date: str) -> List[str]:
-        """
-        Get all historical S&P 500 members between start and end dates.
-
-        Args:
-            start_date: ISO date string (YYYY-MM-DD)
-            end_date: ISO date string (YYYY-MM-DD)
-        Returns:
-            List of historical member ticker symbols
-        """
-        return super().get_all_historical_members(start_date, end_date)
 
     @staticmethod
     def load_and_explode_daily_membership(
