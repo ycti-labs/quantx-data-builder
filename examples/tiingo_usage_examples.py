@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.config import Config
-from src.market_data import PriceDataManager
+from src.market import PriceManager
 
 
 def example_basic_usage():
@@ -24,7 +24,7 @@ def example_basic_usage():
     config = Config("config/settings.yaml")
 
     # Create fetcher
-    fetcher = PriceDataManager(
+    fetcher = PriceManager(
         api_key=config.get("fetcher.tiingo.api_key"),
     )
 
@@ -45,7 +45,7 @@ def example_multiple_symbols():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))
+    fetcher = PriceManager(api_key=config.get("fetcher.tiingo.api_key"))
 
     # Fetch data for multiple symbols
     symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA']
@@ -69,7 +69,7 @@ def example_universe_members():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))
+    fetcher = PriceManager(api_key=config.get("fetcher.tiingo.api_key"))
 
     # Get current SP500 members
     members = fetcher.get_current_members('sp500')
@@ -90,7 +90,7 @@ def example_universe_data():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))
+    fetcher = PriceManager(api_key=config.get("fetcher.tiingo.api_key"))
 
     # Fetch data for all SP500 members (as of specific date)
     print("\nFetching SP500 data for November 2024...")
@@ -121,7 +121,7 @@ def example_point_in_time():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))
+    fetcher = PriceManager(api_key=config.get("fetcher.tiingo.api_key"))
 
     # Get members as of specific historical date
     dates = ['2014-01-01', '2020-01-01', '2022-01-01', '2024-01-01']

@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.config import Config
-from src.market_data import PriceDataManager
+from src.market import PriceManager
 
 
 def test_save_single_symbol():
@@ -21,7 +21,7 @@ def test_save_single_symbol():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(
+    fetcher = PriceManager(
         api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
@@ -49,7 +49,7 @@ def test_save_multiple_symbols():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(
+    fetcher = PriceManager(
         api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
@@ -77,7 +77,7 @@ def test_load_saved_data():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(
+    fetcher = PriceManager(
         api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
@@ -110,7 +110,7 @@ def test_incremental_update():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(
+    fetcher = PriceManager(
         api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
@@ -195,7 +195,7 @@ def verify_schema():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(
+    fetcher = PriceManager(
         api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )

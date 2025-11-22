@@ -13,7 +13,7 @@ from typing import Dict, List
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.config import Config
-from src.market_data import PriceDataManager
+from src.market import PriceManager
 
 # Known ticker changes and corporate actions for S&P 500 companies
 TICKER_HISTORY = {
@@ -168,7 +168,7 @@ def investigate_ticker(ticker: str, api_key: str) -> Dict:
     Returns:
         Dictionary with investigation results
     """
-    builder = PriceDataManager(api_key=api_key, data_root="data/curated")
+    builder = PriceManager(api_key=api_key, data_root="data/curated")
 
     result = {
         'ticker': ticker,

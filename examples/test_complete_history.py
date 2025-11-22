@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.config import Config
-from src.market_data import PriceDataManager
+from src.market import PriceManager
 
 
 def test_1_current_vs_historical():
@@ -22,7 +22,7 @@ def test_1_current_vs_historical():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))
+    fetcher = PriceManager(api_key=config.get("fetcher.tiingo.api_key"))
 
     # Get current members only
     current = fetcher.get_current_members('sp500')
@@ -54,7 +54,7 @@ def test_2_fetch_historical_sample():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))
+    fetcher = PriceManager(api_key=config.get("fetcher.tiingo.api_key"))
 
     # Get all historical members
     all_members = fetcher.get_all_historical_members(
@@ -89,7 +89,7 @@ def test_3_build_complete_database():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(
+    fetcher = PriceManager(
         api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )
@@ -105,7 +105,7 @@ def test_3_build_complete_database():
         universe='sp500',
         start_date='2024-01-01',
         end_date='2024-01-31',
-        save_to_parquet=True,
+        save=True,
         skip_errors=True
     )
 
@@ -130,7 +130,7 @@ def test_4_survivorship_bias_example():
     print("=" * 80)
 
     config = Config("config/settings.yaml")
-    fetcher = PriceDataManager(api_key=config.get("fetcher.tiingo.api_key"))
+    fetcher = PriceManager(api_key=config.get("fetcher.tiingo.api_key"))
 
     print("\n🎯 Scenario: Backtesting a strategy from 2020-2024")
     print()

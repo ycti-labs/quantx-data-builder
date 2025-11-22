@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.config import Config
-from src.market_data import PriceDataManager
+from src.market import PriceManager
 from src.universe import SP500Universe
 
 
@@ -33,7 +33,7 @@ def test_ticker_correction():
     sp500 = SP500Universe(data_root=config.get("storage.local.root_path", "data"))
 
     # Create price data manager
-    manager = PriceDataManager(
+    manager = PriceManager(
         api_key=config.get("fetcher.tiingo.api_key"),
         universe=sp500
     )
@@ -108,7 +108,7 @@ def demo_fetch_universe_with_corrections():
     sp500 = SP500Universe(data_root=config.get("storage.local.root_path", "data"))
 
     # Create price data manager
-    manager = PriceDataManager(
+    manager = PriceManager(
         api_key=config.get("fetcher.tiingo.api_key"),
         universe=sp500
     )

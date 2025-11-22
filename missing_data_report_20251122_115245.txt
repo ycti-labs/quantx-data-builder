@@ -1,0 +1,272 @@
+================================================================================
+SP500 Universe Missing Data Check - Overlap-Aware
+================================================================================
+
+Generated: 2025-11-22 11:52:45
+Research Period: 2014-01-01 to 2024-12-31
+Universe Scope: Historical (all symbols ever in SP500)
+================================================================================
+
+Loading historical universe members...
+Total symbols: 748
+
+Checking missing data for all symbols...
+────────────────────────────────────────────────────────────────────────────────
+Progress: 1/748 (0%) - Current: A
+Progress: 50/748 (6%) - Current: ANET
+Progress: 100/748 (13%) - Current: BMS
+Progress: 150/748 (20%) - Current: CMG
+Progress: 200/748 (26%) - Current: DHI
+Progress: 250/748 (33%) - Current: ETN
+Progress: 300/748 (40%) - Current: GEV
+Progress: 350/748 (46%) - Current: HUM
+Progress: 400/748 (53%) - Current: KRFT
+Progress: 450/748 (60%) - Current: MHK
+Progress: 500/748 (66%) - Current: NSC
+Progress: 550/748 (73%) - Current: PNR
+Progress: 600/748 (80%) - Current: SEE
+Progress: 650/748 (86%) - Current: TGT
+Progress: 700/748 (93%) - Current: VNO
+
+================================================================================
+SUMMARY
+================================================================================
+
+Total Symbols Checked: 748
+────────────────────────────────────────────────────────────────────────────────
+✅ Complete Data:            683 ( 91.3%)
+⊘  No Overlap:                 0 (  0.0%)
+⚠️  Missing (Simple):          28 (  3.7%)
+⚠️  Missing (With Gaps):        0 (  0.0%)
+❌ Errors:                     0 (  0.0%)
+────────────────────────────────────────────────────────────────────────────────
+📊 Total Needing Fetch:       28 (  3.7%)
+
+================================================================================
+MISSING DATA - SIMPLE (All 28 symbols)
+================================================================================
+
+ABC:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2023, 8, 25))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+ADS:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2020, 5, 22))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+ANTM:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2022, 6, 21))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+BF.B:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2024, 12, 31))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+BLL:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2022, 4, 11))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+BRK.B:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2024, 12, 31))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+CBS:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2019, 11, 21))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+CCE:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2016, 5, 24))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+COG:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2021, 9, 20))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+ENDP:
+  Checked periods: [(datetime.date(2015, 1, 27), datetime.date(2017, 3, 1))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+ESV:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2016, 3, 29))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+FB:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2022, 6, 8))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+FBHS:
+  Checked periods: [(datetime.date(2016, 6, 24), datetime.date(2022, 11, 8))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+FLT:
+  Checked periods: [(datetime.date(2018, 6, 20), datetime.date(2024, 3, 18))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+FRC:
+  Checked periods: [(datetime.date(2019, 1, 2), datetime.date(2023, 3, 20))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+GPS:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2022, 1, 20))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+HFC:
+  Checked periods: [(datetime.date(2018, 6, 18), datetime.date(2021, 5, 14))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+IGT:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2014, 6, 19))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+LIFE:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2014, 1, 22))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+MNK:
+  Checked periods: [(datetime.date(2014, 8, 19), datetime.date(2017, 7, 25))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+PEAK:
+  Checked periods: [(datetime.date(2019, 11, 5), datetime.date(2024, 2, 1))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+PKI:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2023, 5, 4))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+POM:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2016, 3, 18))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+RE:
+  Checked periods: [(datetime.date(2017, 6, 19), datetime.date(2023, 6, 7))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+SNDK:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2016, 5, 11))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+TMK:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2019, 7, 15))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+WIN:
+  Checked periods: [(datetime.date(2014, 1, 1), datetime.date(2015, 3, 31))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+WLTW:
+  Checked periods: [(datetime.date(2016, 1, 5), datetime.date(2021, 12, 20))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+================================================================================
+INSIGHTS
+================================================================================
+
+1. Overlap-Aware Logic Applied:
+   - Only checked data for periods within BOTH membership AND research window
+   - 0 symbols had no overlap (pre-2014 or post-2024 membership)
+   - These 0 symbols require NO data fetching
+
+2. Data Completeness:
+   - 683 symbols (91.3%) have complete data in checked periods
+   - 28 symbols (3.7%) need data fetching
+   - 0 of these have discontinuous membership (gaps)
+
+3. Efficiency Gain:
+   - Without overlap logic: Would check all 748 symbols
+   - With overlap logic: Only 748 symbols need checking
+   - Savings: 0 symbols (0.0%) skipped
+
+4. Next Steps:
+   - Fetch missing data for 28 symbols
+   - Focus on 0 symbols with gaps (requires period-aware fetch)
+   - 0 symbols need investigation
+    
+
+================================================================================
+Report saved to: missing_data_report_20251122_115245.txt
+================================================================================

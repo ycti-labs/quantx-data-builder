@@ -44,7 +44,6 @@ class SP500Universe(Universe):
                          exchange="us",
                          currency="USD",
                          data_root=data_root,
-                         etf_ticker="SPY",
         )
 
     @staticmethod

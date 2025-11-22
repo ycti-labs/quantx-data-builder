@@ -11,13 +11,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.config import Config
-from src.market_data import PriceDataManager
+from src.market import PriceManager
 
 
 def setup_fetcher():
     """Initialize fetcher with config"""
     config = Config("config/settings.yaml")
-    return PriceDataManager(
+    return PriceManager(
         api_key=config.get("fetcher.tiingo.api_key"),
         data_root="data/curated"
     )

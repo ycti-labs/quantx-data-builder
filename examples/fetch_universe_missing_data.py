@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from core.config import Config
-from market_data import PriceDataManager
+from market import PriceManager
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
         return 1
 
     # Initialize builder
-    builder = PriceDataManager(api_key=api_key, data_root="data/curated")
+    builder = PriceManager(api_key=api_key, data_root="data/curated")
 
     # Example 1: Check single ticker
     print("=" * 80)

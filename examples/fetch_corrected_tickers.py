@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.config import Config
-from src.market_data import PriceDataManager
+from src.market import PriceManager
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
         print(f"❌ Error loading config: {e}")
         return 1
 
-    builder = PriceDataManager(api_key=api_key, data_root="data/curated")
+    builder = PriceManager(api_key=api_key, data_root="data/curated")
 
     # Define ticker replacements
     replacements = {

@@ -5,14 +5,13 @@ Supports multiple market universes with configurable data sources
 
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 
 logger = logging.getLogger(__name__)
-
 
 class Universe(ABC):
     """
@@ -25,8 +24,7 @@ class Universe(ABC):
                 universe_name: str,
                  exchange: str,
                  currency: str,
-                 data_root: str = "./data",
-                 etf_ticker: str = ""
+                 data_root: str = "./data"
     ):
         """
         Initialize universe builder
@@ -44,7 +42,26 @@ class Universe(ABC):
         pass
 
     def get_membership_path(self, mode: str = 'daily') -> Path:
-        return self.data_root / "curated" / "membership" / f"universe={self.name.lower()}" / f"mode={mode}"
+        return (self.data_root /
+            "curated" /
+            "membership" /
+            f"universe={self.name.lower()}" /
+            f"mode={mode}"
+        )
+
+    def get_ticker_path(self, symbol: str) -> Path:
+        return (self.data_root /
+            "curated" /
+            "tickers" /
+            f"exchange={self.exchange}" /
+            f"ticker={symbol}"
+        )
+
+    def get_ticker_prices_path(self, symbol: str, frequency: str = "daily") -> Path:
+        return self.get_ticker_path(symbol) / "prices" / f"freq={frequency}"
+
+    def get_ticker_fundamentals_path(self, symbol: str) -> Path:
+        return self.get_ticker_path(symbol) / "fundamentals"
 
     def write_parquet(self, df: pd.DataFrame, output_path: Path) -> None:
         """
@@ -184,6 +201,70 @@ class Universe(ABC):
             logger.warning(f"Could not load ticker corrections: {e}")
             return {}
 
+    def get_membership_intervals(
+        self,
+        symbol: str,
+        span_mode: bool = False
+    ) -> List[Tuple[date, date]]:
+        """
+        Get membership intervals for a symbol in this universe
+
+        Args:
+            symbol: Ticker symbol
+            span_mode: If True, return single interval spanning from earliest start to latest end.
+                      If False (default), return all individual intervals (handles gaps).
+
+        Returns:
+            List of (start_date, end_date) tuples, sorted chronologically
+            Empty list if symbol not found or has no membership data
+
+        Examples:
+            # Symbol with gaps (removed and re-added)
+            get_membership_intervals('AMD', span_mode=False)
+            # Returns: [(date(2000, 1, 3), date(2013, 9, 17)),
+            #           (date(2017, 3, 20), date(2025, 7, 9))]
+
+            get_membership_intervals('AMD', span_mode=True)
+            # Returns: [(date(2000, 1, 3), date(2025, 7, 9))]
+
+            # Continuous member
+            get_membership_intervals('AAPL', span_mode=False)
+            # Returns: [(date(2000, 1, 3), date(2025, 7, 9))]
+        """
+        try:
+            intervals_path = (
+                self.get_membership_path(mode='intervals') /
+                f"{self.name.lower()}_membership_intervals.parquet"
+            )
+
+            if not intervals_path.exists():
+                return []
+
+            df = pd.read_parquet(intervals_path)
+            symbol_data = df[df['ticker'] == symbol]
+
+            if symbol_data.empty:
+                return []
+
+            # Convert dates and sort by start_date
+            start_dates = pd.to_datetime(symbol_data['start_date'])
+            end_dates = pd.to_datetime(symbol_data['end_date'])
+
+            if span_mode:
+                # Return single interval spanning full membership period
+                member_start = start_dates.min().date()
+                member_end = end_dates.max().date()
+                return [(member_start, member_end)]
+            else:
+                # Return all individual intervals sorted chronologically
+                intervals = list(zip(start_dates.dt.date, end_dates.dt.date))
+                intervals.sort(key=lambda x: x[0])
+                return intervals
+
+        except Exception as e:
+            logger.warning(f"Could not get membership intervals for {symbol}: {e}")
+            return []
+
     def get_all_historical_members(
         self,
         period_start: str,
@@ -259,3 +340,149 @@ class Universe(ABC):
         except Exception as e:
             logger.error(f"Error reading membership data: {e}")
             return []
+
+    def get_gvkey_for_symbol(self, symbol: str) -> Optional[int]:
+        """
+        Get GVKEY for a given ticker symbol
+
+        Args:
+            symbol: Ticker symbol (e.g., 'AAPL', 'MSFT')
+
+        Returns:
+            GVKEY integer or None if not found
+        """
+        gvkey_path = self.data_root / "curated" / "metadata" / "gvkey.parquet"
+
+        try:
+            df = pd.read_parquet(gvkey_path)
+
+            # Ensure we have the required columns
+            if 'ticker' not in df.columns or 'gvkey' not in df.columns:
+                logger.error(f"Required columns (ticker, gvkey) not found in {gvkey_path}")
+                return None
+
+            # Find matching ticker (case-insensitive)
+            matches = df[df['ticker'].str.upper() == symbol.upper()]
+
+            if matches.empty:
+                logger.debug(f"No GVKEY found for symbol: {symbol}")
+                return None
+
+            # Return first match
+            gvkey = matches.iloc[0]['gvkey']
+            return int(gvkey) if pd.notna(gvkey) else None
+
+        except FileNotFoundError:
+            logger.warning(f"GVKEY mapping file not found: {gvkey_path}")
+            return None
+        except Exception as e:
+            logger.error(f"Error reading GVKEY mapping: {e}")
+            return None
+
+    def add_gvkey_for_symbol(self, symbol: str, gvkey: int) -> bool:
+        """
+        Add or update GVKEY mapping for a ticker symbol
+
+        Args:
+            symbol: Ticker symbol (e.g., 'AAPL', 'MSFT')
+            gvkey: GVKEY integer
+
+        Returns:
+            True if successful, False otherwise
+        """
+        gvkey_path = self.data_root / "curated" / "metadata" / "gvkey.parquet"
+
+        try:
+            # Ensure directory exists
+            gvkey_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Load existing data or create new DataFrame
+            if gvkey_path.exists():
+                df = pd.read_parquet(gvkey_path)
+            else:
+                df = pd.DataFrame(columns=['ticker', 'gvkey'])
+
+            # Remove existing entry for this ticker if it exists
+            df = df[df['ticker'].str.upper() != symbol.upper()]
+
+            # Add new entry
+            new_row = pd.DataFrame([{'ticker': symbol.upper(), 'gvkey': int(gvkey)}])
+            df = pd.concat([df, new_row], ignore_index=True)
+
+            # Sort by ticker for consistency
+            df = df.sort_values('ticker').reset_index(drop=True)
+
+            # Save back to parquet
+            df.to_parquet(
+                gvkey_path,
+                engine='pyarrow',
+                compression='snappy',
+                index=False
+            )
+
+            logger.info(f"Added/updated GVKEY mapping: {symbol} -> {gvkey}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error adding GVKEY mapping for {symbol}: {e}")
+            return False
+
+    def get_symbol_for_gvkey(self, gvkey: int) -> Optional[str]:
+        """
+        Get ticker symbol(s) for a given GVKEY
+
+        Args:
+            gvkey: GVKEY integer
+
+        Returns:
+            Ticker symbol or None if not found
+            If multiple tickers exist for same GVKEY, returns the first one
+        """
+        gvkey_path = self.data_root / "curated" / "metadata" / "gvkey.parquet"
+
+        try:
+            df = pd.read_parquet(gvkey_path)
+
+            # Ensure we have the required columns
+            if 'ticker' not in df.columns or 'gvkey' not in df.columns:
+                logger.error(f"Required columns (ticker, gvkey) not found in {gvkey_path}")
+                return None
+
+            # Find matching gvkey
+            matches = df[df['gvkey'] == int(gvkey)]
+
+            if matches.empty:
+                logger.debug(f"No ticker found for GVKEY: {gvkey}")
+                return None
+
+            # Return first match
+            return matches.iloc[0]['ticker']
+
+        except FileNotFoundError:
+            logger.warning(f"GVKEY mapping file not found: {gvkey_path}")
+            return None
+        except Exception as e:
+            logger.error(f"Error reading GVKEY mapping: {e}")
+            return None
+
+    def get_all_gvkey_mappings(self) -> pd.DataFrame:
+        """
+        Get all GVKEY-ticker mappings
+
+        Returns:
+            DataFrame with columns: ticker, gvkey
+            Empty DataFrame if file not found or error occurs
+        """
+        gvkey_path = self.data_root / "curated" / "metadata" / "gvkey.parquet"
+
+        try:
+            df = pd.read_parquet(gvkey_path)
+            logger.info(f"Loaded {len(df)} GVKEY mappings from {gvkey_path}")
+            return df
+
+        except FileNotFoundError:
+            logger.warning(f"GVKEY mapping file not found: {gvkey_path}")
+            return pd.DataFrame(columns=['ticker', 'gvkey'])
+        except Exception as e:
+            logger.error(f"Error reading GVKEY mapping: {e}")
+            return pd.DataFrame(columns=['ticker', 'gvkey'])
