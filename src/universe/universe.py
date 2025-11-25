@@ -13,6 +13,7 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+
 class Universe(ABC):
     """
     Main class to orchestrate universe building from configured sources
@@ -20,11 +21,13 @@ class Universe(ABC):
     Also provides membership query functionality
     """
 
-    def __init__(self,
-                universe_name: str,
-                 exchange: str,
-                 currency: str,
-                 data_root: str = "./data"
+    def __init__(
+        self,
+        universe_name: str,
+        exchange: str,
+        currency: str,
+        market_etf: str,
+        data_root: str = "./data",
     ):
         """
         Initialize universe builder
@@ -35,29 +38,39 @@ class Universe(ABC):
         self.name: str = universe_name
         self.exchange: str = exchange
         self.currency: str = currency
+        self.market_etf: str = market_etf
         self.data_root = Path(data_root)
 
     @abstractmethod
     def build_membership(self):
         pass
 
-    def get_membership_path(self, mode: str = 'daily') -> Path:
-        return (self.data_root /
-            "curated" /
-            "membership" /
-            f"universe={self.name.lower()}" /
-            f"mode={mode}"
+    def get_membership_path(self, mode: str = "daily") -> Path:
+        return (
+            self.data_root
+            / "curated"
+            / "membership"
+            / f"universe={self.name.lower()}"
+            / f"mode={mode}"
+        )
+
+    def get_references_path(self) -> Path:
+        return (
+            self.data_root
+            / "curated"
+            / "references"
         )
 
     def get_ticker_path(self, symbol: str) -> Path:
-        return (self.data_root /
-            "curated" /
-            "tickers" /
-            f"exchange={self.exchange}" /
-            f"ticker={symbol}"
+        return (
+            self.data_root
+            / "curated"
+            / "tickers"
+            / f"exchange={self.exchange}"
+            / f"ticker={symbol}"
         )
 
-    def get_ticker_prices_path(self, symbol: str, frequency: str = "daily") -> Path:
+    def get_ticker_prices_path(self, symbol: str, frequency: str) -> Path:
         return self.get_ticker_path(symbol) / "prices" / f"freq={frequency}"
 
     def get_ticker_fundamentals_path(self, symbol: str) -> Path:
@@ -77,10 +90,7 @@ class Universe(ABC):
         df.to_parquet(output_path, compression="snappy", index=False, engine="pyarrow")
         logger.info(f"✅ Wrote {len(df)} rows to {output_path}")
 
-    def get_members(
-        self,
-        as_of_date: Optional[str] = None
-    ) -> List[str]:
+    def get_members(self, as_of_date: Optional[str] = None) -> List[str]:
         """
         Get universe members as of a specific date
 
@@ -96,25 +106,27 @@ class Universe(ABC):
         if as_of_date is None:
             lookup_date = datetime.now().date()
         else:
-            lookup_date = datetime.strptime(as_of_date, '%Y-%m-%d').date()
+            lookup_date = datetime.strptime(as_of_date, "%Y-%m-%d").date()
 
         # Path to membership intervals file
-        intervals_path = self.get_membership_path(mode='intervals') / f"{self.name.lower()}_membership_intervals.parquet"
+        intervals_path = (
+            self.get_membership_path(mode="intervals")
+            / f"{self.name.lower()}_membership_intervals.parquet"
+        )
 
         try:
             # Read membership intervals
             df = pd.read_parquet(intervals_path)
 
             # Filter to members active on as_of_date
-            df['start_date'] = pd.to_datetime(df['start_date']).dt.date
-            df['end_date'] = pd.to_datetime(df['end_date']).dt.date
+            df["start_date"] = pd.to_datetime(df["start_date"]).dt.date
+            df["end_date"] = pd.to_datetime(df["end_date"]).dt.date
 
             active = df[
-                (df['start_date'] <= lookup_date) &
-                (df['end_date'] >= lookup_date)
+                (df["start_date"] <= lookup_date) & (df["end_date"] >= lookup_date)
             ]
 
-            symbols = active['ticker'].unique().tolist()
+            symbols = active["ticker"].unique().tolist()
 
             logger.info(
                 f"Found {len(symbols)} members in {self.name} as of {lookup_date}"
@@ -122,9 +134,7 @@ class Universe(ABC):
             return symbols
 
         except FileNotFoundError:
-            logger.warning(
-                f"Membership file not found: {intervals_path}"
-            )
+            logger.warning(f"Membership file not found: {intervals_path}")
             return []
         except Exception as e:
             logger.error(f"Error reading membership data: {e}")
@@ -154,29 +164,34 @@ class Universe(ABC):
             Dictionary mapping ticker -> list of alternative tickers
             Example: {'ANTM': ['ELV'], 'FB': ['META'], 'ELV': ['ANTM']}
         """
-        intervals_path = self.get_membership_path(mode='intervals') / f"{self.name.lower()}_membership_intervals.parquet"
+        intervals_path = (
+            self.get_membership_path(mode="intervals")
+            / f"{self.name.lower()}_membership_intervals.parquet"
+        )
 
         try:
             # Read membership with gvkey
             df = pd.read_parquet(intervals_path)
 
-            if 'gvkey' not in df.columns:
-                logger.warning(f"No gvkey column in {intervals_path}, cannot provide ticker corrections")
+            if "gvkey" not in df.columns:
+                logger.warning(
+                    f"No gvkey column in {intervals_path}, cannot provide ticker corrections"
+                )
                 return {}
 
             # Remove rows without gvkey
-            df = df[df['gvkey'].notna()].copy()
+            df = df[df["gvkey"].notna()].copy()
 
             # Convert dates for sorting
-            df['start_date'] = pd.to_datetime(df['start_date'])
-            df['end_date'] = pd.to_datetime(df['end_date'])
+            df["start_date"] = pd.to_datetime(df["start_date"])
+            df["end_date"] = pd.to_datetime(df["end_date"])
 
             # Group by gvkey to find all tickers for same company
             corrections = {}
-            for gvkey, group in df.groupby('gvkey'):
+            for gvkey, group in df.groupby("gvkey"):
                 # Sort by start_date to get chronological order
-                group = group.sort_values('start_date')
-                tickers = group['ticker'].unique().tolist()
+                group = group.sort_values("start_date")
+                tickers = group["ticker"].unique().tolist()
 
                 # If same company has multiple tickers (ticker changes over time)
                 if len(tickers) > 1:
@@ -187,13 +202,17 @@ class Universe(ABC):
                             corrections[ticker] = alternatives
 
             if corrections:
-                logger.info(f"Loaded {len(corrections)} ticker corrections from gvkey mapping")
+                logger.info(
+                    f"Loaded {len(corrections)} ticker corrections from gvkey mapping"
+                )
                 # Log some examples
                 examples = list(corrections.items())[:5]
                 for ticker, alts in examples:
                     logger.info(f"  {ticker} -> {alts}")
             else:
-                logger.info("No ticker corrections found (all tickers are unique per gvkey)")
+                logger.info(
+                    "No ticker corrections found (all tickers are unique per gvkey)"
+                )
 
             return corrections
 
@@ -202,9 +221,7 @@ class Universe(ABC):
             return {}
 
     def get_membership_intervals(
-        self,
-        symbol: str,
-        span_mode: bool = False
+        self, symbol: str, span_mode: bool = False
     ) -> List[Tuple[date, date]]:
         """
         Get membership intervals for a symbol in this universe
@@ -233,22 +250,22 @@ class Universe(ABC):
         """
         try:
             intervals_path = (
-                self.get_membership_path(mode='intervals') /
-                f"{self.name.lower()}_membership_intervals.parquet"
+                self.get_membership_path(mode="intervals")
+                / f"{self.name.lower()}_membership_intervals.parquet"
             )
 
             if not intervals_path.exists():
                 return []
 
             df = pd.read_parquet(intervals_path)
-            symbol_data = df[df['ticker'] == symbol]
+            symbol_data = df[df["ticker"] == symbol]
 
             if symbol_data.empty:
                 return []
 
             # Convert dates and sort by start_date
-            start_dates = pd.to_datetime(symbol_data['start_date'])
-            end_dates = pd.to_datetime(symbol_data['end_date'])
+            start_dates = pd.to_datetime(symbol_data["start_date"])
+            end_dates = pd.to_datetime(symbol_data["end_date"])
 
             if span_mode:
                 # Return single interval spanning full membership period
@@ -265,11 +282,7 @@ class Universe(ABC):
             logger.warning(f"Could not get membership intervals for {symbol}: {e}")
             return []
 
-    def get_all_historical_members(
-        self,
-        period_start: str,
-        period_end: str
-    ) -> List[str]:
+    def get_all_historical_members(self, start_date: str, end_date: str) -> List[str]:
         """
         Get ALL stocks that were members at ANY point during the period.
 
@@ -288,38 +301,40 @@ class Universe(ABC):
         Returns:
             List of all ticker symbols that were members during any part of the period
         """
-        start = datetime.strptime(period_start, '%Y-%m-%d').date()
-        end = datetime.strptime(period_end, '%Y-%m-%d').date()
+        start = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end = datetime.strptime(end_date, "%Y-%m-%d").date()
 
         # Path to membership intervals file
-        intervals_path = self.get_membership_path(mode='intervals') / f"{self.name.lower()}_membership_intervals.parquet"
+        intervals_path = (
+            self.get_membership_path(mode="intervals")
+            / f"{self.name.lower()}_membership_intervals.parquet"
+        )
 
         try:
             # Read membership intervals
             df = pd.read_parquet(intervals_path)
 
             # Convert dates
-            df['start_date'] = pd.to_datetime(df['start_date']).dt.date
-            df['end_date'] = pd.to_datetime(df['end_date']).dt.date
+            df["start_date"] = pd.to_datetime(df["start_date"]).dt.date
+            df["end_date"] = pd.to_datetime(df["end_date"]).dt.date
 
             # Find all tickers with overlapping membership periods
             # A ticker is included if: (ticker_start <= period_end) AND (ticker_end >= period_start)
             # This captures all possible overlaps
             historical_members = df[
-                (df['start_date'] <= end) &
-                (df['end_date'] >= start)
+                (df["start_date"] <= end) & (df["end_date"] >= start)
             ]
 
-            symbols = historical_members['ticker'].unique().tolist()
+            symbols = historical_members["ticker"].unique().tolist()
 
             logger.info(
                 f"Found {len(symbols)} historical members in {self.name} "
-                f"for period {period_start} to {period_end} "
+                f"for period {start_date} to {end_date} "
                 f"(includes current + removed members)"
             )
 
             # Log some stats for transparency
-            current_members = df[df['end_date'] >= datetime.now().date()]
+            current_members = df[df["end_date"] >= datetime.now().date()]
             removed_count = len(symbols) - len(current_members)
             if removed_count > 0:
                 logger.info(
@@ -330,9 +345,7 @@ class Universe(ABC):
             return symbols
 
         except FileNotFoundError:
-            logger.warning(
-                f"Membership file not found: {intervals_path}"
-            )
+            logger.warning(f"Membership file not found: {intervals_path}")
             logger.warning(
                 "Falling back to current members only (survivorship bias present!)"
             )
@@ -357,19 +370,21 @@ class Universe(ABC):
             df = pd.read_parquet(gvkey_path)
 
             # Ensure we have the required columns
-            if 'ticker' not in df.columns or 'gvkey' not in df.columns:
-                logger.error(f"Required columns (ticker, gvkey) not found in {gvkey_path}")
+            if "ticker" not in df.columns or "gvkey" not in df.columns:
+                logger.error(
+                    f"Required columns (ticker, gvkey) not found in {gvkey_path}"
+                )
                 return None
 
             # Find matching ticker (case-insensitive)
-            matches = df[df['ticker'].str.upper() == symbol.upper()]
+            matches = df[df["ticker"].str.upper() == symbol.upper()]
 
             if matches.empty:
                 logger.debug(f"No GVKEY found for symbol: {symbol}")
                 return None
 
             # Return first match
-            gvkey = matches.iloc[0]['gvkey']
+            gvkey = matches.iloc[0]["gvkey"]
             return int(gvkey) if pd.notna(gvkey) else None
 
         except FileNotFoundError:
@@ -400,24 +415,21 @@ class Universe(ABC):
             if gvkey_path.exists():
                 df = pd.read_parquet(gvkey_path)
             else:
-                df = pd.DataFrame(columns=['ticker', 'gvkey'])
+                df = pd.DataFrame(columns=["ticker", "gvkey"])
 
             # Remove existing entry for this ticker if it exists
-            df = df[df['ticker'].str.upper() != symbol.upper()]
+            df = df[df["ticker"].str.upper() != symbol.upper()]
 
             # Add new entry
-            new_row = pd.DataFrame([{'ticker': symbol.upper(), 'gvkey': int(gvkey)}])
+            new_row = pd.DataFrame([{"ticker": symbol.upper(), "gvkey": int(gvkey)}])
             df = pd.concat([df, new_row], ignore_index=True)
 
             # Sort by ticker for consistency
-            df = df.sort_values('ticker').reset_index(drop=True)
+            df = df.sort_values("ticker").reset_index(drop=True)
 
             # Save back to parquet
             df.to_parquet(
-                gvkey_path,
-                engine='pyarrow',
-                compression='snappy',
-                index=False
+                gvkey_path, engine="pyarrow", compression="snappy", index=False
             )
 
             logger.info(f"Added/updated GVKEY mapping: {symbol} -> {gvkey}")
@@ -444,19 +456,21 @@ class Universe(ABC):
             df = pd.read_parquet(gvkey_path)
 
             # Ensure we have the required columns
-            if 'ticker' not in df.columns or 'gvkey' not in df.columns:
-                logger.error(f"Required columns (ticker, gvkey) not found in {gvkey_path}")
+            if "ticker" not in df.columns or "gvkey" not in df.columns:
+                logger.error(
+                    f"Required columns (ticker, gvkey) not found in {gvkey_path}"
+                )
                 return None
 
             # Find matching gvkey
-            matches = df[df['gvkey'] == int(gvkey)]
+            matches = df[df["gvkey"] == int(gvkey)]
 
             if matches.empty:
                 logger.debug(f"No ticker found for GVKEY: {gvkey}")
                 return None
 
             # Return first match
-            return matches.iloc[0]['ticker']
+            return matches.iloc[0]["ticker"]
 
         except FileNotFoundError:
             logger.warning(f"GVKEY mapping file not found: {gvkey_path}")
@@ -482,7 +496,7 @@ class Universe(ABC):
 
         except FileNotFoundError:
             logger.warning(f"GVKEY mapping file not found: {gvkey_path}")
-            return pd.DataFrame(columns=['ticker', 'gvkey'])
+            return pd.DataFrame(columns=["ticker", "gvkey"])
         except Exception as e:
             logger.error(f"Error reading GVKEY mapping: {e}")
-            return pd.DataFrame(columns=['ticker', 'gvkey'])
+            return pd.DataFrame(columns=["ticker", "gvkey"])

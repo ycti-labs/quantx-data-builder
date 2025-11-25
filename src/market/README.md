@@ -1,102 +1,71 @@
-# Data Fetcher Module
+# Market Data Managers
 
-**Configuration-driven, universe-specific data fetchers** for downloading historical stock market data.
+**Comprehensive data managers for price, fundamental, and ESG data** with unified interfaces for fetching, storing, and querying financial market data.
+
+## Overview
+
+The Market module provides three specialized data managers:
+
+| Manager | Data Type | Source | Storage |
+|---------|-----------|--------|---------|
+| **PriceManager** | OHLCV prices | Tiingo API | `data/curated/prices/` |
+| **FundamentalManager** | Financial statements | Tiingo API | `data/curated/fundamentals/` |
+| **ESGManager** | ESG scores | Local Excel/CSV + GVKEY mapping | `data/curated/esg/` |
 
 ## Quick Start
 
-```python
-from src.fetcher import FetcherConfig, FetcherFactory
-from src.storage import LocalStorage
-
-# 1. Load configuration
-config = FetcherConfig("config/settings.yaml")
-
-# 2. Create storage
-storage = LocalStorage(root_path="./data")
-
-# 3. Create factory
-factory = FetcherFactory(config, storage)
-
-# 4. Create fetcher for enabled universe
-fetcher = factory.create_fetcher("SP500")
-
-# 5. Fetch data
-results = fetcher.fetch_daily_incremental(lookback_days=5)
-print(f"✅ Fetched {results['success']} symbols")
-```
-
-## Features
-
-- ✅ **Configuration-driven**: All settings in `config/settings.yaml`
-- ✅ **Universe-specific**: Dedicated fetchers for each market (SP500, NASDAQ100, etc.)
-- ✅ **Parallel fetching**: ThreadPoolExecutor for concurrent downloads
-- ✅ **Automatic retry**: Exponential backoff with tenacity
-- ✅ **Data deduplication**: Automatic on append operations
-- ✅ **Partitioned storage**: Hive-style year-based partitioning
-- ✅ **Stable IDs**: Hash-based ticker_id for robust joins
-- ✅ **Extensible**: Easy to add new universes
-
-## Configuration
-
-Edit `config/settings.yaml` to enable/disable universes:
-
-```yaml
-universes:
-  SP500:
-    - enable: true          # ✅ Fetch S&P 500 data
-    - start_date: "2000-01-01"
-  
-  NASDAQ100:
-    - enable: false         # ❌ Skip NASDAQ-100
-    - start_date: "2000-01-01"
-
-fetcher:
-  max_workers: 10           # Concurrent downloads
-  lookback_days: 5          # For incremental updates
-  chunk_size: 100           # Symbols per batch
-  fetch_actions: true       # Include dividends/splits
-```
-
-## Available Fetchers
-
-| Universe | Fetcher Class | Status | Symbol Count |
-|----------|---------------|--------|--------------|
-| S&P 500 | `SP500Fetcher` | ✅ Ready | ~500 |
-| NASDAQ-100 | `Nasdaq100Fetcher` | ✅ Ready | ~100 |
-| Russell 2000 | `Russell2000Fetcher` | ⚠️ Requires paid data | ~2000 |
-
-## Usage Examples
-
-### Daily Incremental Update
+### PriceManager - Market Prices
 
 ```python
-# Fetch last 5 days for all enabled universes
-fetchers = factory.create_all_enabled_fetchers()
+from market import PriceManager
+from universe import SP500Universe
+from tiingo import TiingoClient
 
-for name, fetcher in fetchers.items():
-    results = fetcher.fetch_daily_incremental(lookback_days=5)
-    print(f"{name}: {results['success']} success, {results['failed']} failed")
+# Initialize
+universe = SP500Universe(data_root="./data")
+tiingo = TiingoClient(config={'api_key': 'YOUR_API_KEY'})
+price_mgr = PriceManager(tiingo, universe)
+
+# Fetch daily prices
+df = price_mgr.fetch_eod('AAPL', 'daily', '2020-01-01', '2024-12-31')
+
+# Load saved data
+df = price_mgr.load_price_data('AAPL', 'daily', '2023-01-01', '2023-12-31')
 ```
 
-### Historical Backfill
+### ESGManager - ESG Scores
 
 ```python
-# Backfill from configured start_date to today
-sp500_fetcher = factory.create_fetcher("SP500")
-results = sp500_fetcher.fetch_backfill(
-    end_date="2024-12-31",
-    chunk_size=100
-)
+from market import ESGManager
+from universe import SP500Universe
+
+# Initialize (no API key needed!)
+universe = SP500Universe(data_root="./data")
+esg_mgr = ESGManager(universe)
+
+# Get ESG data for a company
+df = esg_mgr.get_esg_data(symbol='AAPL', start_year=2020)
+print(df[['ticker', 'year', 'esg_score', 'env_score', 'soc_score', 'gov_score']])
+
+# Get data for multiple companies
+tech_stocks = ['AAPL', 'MSFT', 'GOOGL', 'META']
+data = esg_mgr.get_multiple_esg_data(tech_stocks, start_year=2023)
+
+# Export to Parquet
+results = esg_mgr.export_to_parquet(['AAPL', 'MSFT'], start_year=2020)
 ```
 
-### Check Configuration
+## ESGManager Features
 
-```python
-config = FetcherConfig("config/settings.yaml")
+✅ **No API required**: Loads data from local Excel/CSV files  
+✅ **GVKEY mapping**: Automatic conversion from GVKEY to ticker symbols  
+✅ **Comprehensive scores**: ESG composite + Environmental, Social, Governance pillars  
+✅ **Year-based queries**: Filter by year range  
+✅ **Parquet storage**: Hive-style partitioned files (ticker=SYMBOL/year=YYYY)  
+✅ **Coverage reports**: Analyze data availability by year  
+✅ **Batch operations**: Process multiple symbols efficiently  
 
-# Get enabled universes
-enabled = config.get_enabled_universes()
-print([u.name for u in enabled])  # ['SP500']
+## Data Sources
 
 # Check specific universe
 if config.is_universe_enabled("SP500"):

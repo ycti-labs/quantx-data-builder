@@ -1,0 +1,429 @@
+================================================================================
+SP500 Universe Missing Data Check - Multi-Frequency Overlap-Aware (Price + ESG)
+================================================================================
+
+Generated: 2025-11-24 23:08:17
+Research Period: 2014-01-01 to 2025-11-11
+Universe Scope: Historical (all symbols ever in SP500)
+Frequencies: daily, weekly, monthly
+Note: Frequency-aware alignment applied (monthly=end-of-month, weekly=end-of-week)
+================================================================================
+
+Loading historical universe members...
+Total symbols: 763
+
+Checking missing data for all symbols (all frequencies)...
+────────────────────────────────────────────────────────────────────────────────
+Progress: 1/763 (0%) - Current: A
+Progress: 50/763 (6%) - Current: ANET
+Progress: 100/763 (13%) - Current: BLL
+Progress: 150/763 (19%) - Current: CME
+Progress: 200/763 (26%) - Current: DELL
+Progress: 250/763 (32%) - Current: ES
+Progress: 300/763 (39%) - Current: GAS
+Progress: 350/763 (45%) - Current: HRL
+Progress: 400/763 (52%) - Current: KKR
+Progress: 450/763 (58%) - Current: MCHP
+Progress: 500/763 (65%) - Current: NKE
+Progress: 550/763 (72%) - Current: PHM
+Progress: 600/763 (78%) - Current: RTN
+Progress: 650/763 (85%) - Current: TDC
+Progress: 700/763 (91%) - Current: URBN
+Progress: 750/763 (98%) - Current: XEC
+
+================================================================================
+ESG DATA COVERAGE CHECK
+================================================================================
+
+Checking ESG data coverage for all symbols...
+ESG Progress: 1/763 (0%) - Current: A
+ESG Progress: 50/763 (6%) - Current: ANET
+ESG Progress: 100/763 (13%) - Current: BLL
+ESG Progress: 150/763 (19%) - Current: CME
+ESG Progress: 200/763 (26%) - Current: DELL
+ESG Progress: 250/763 (32%) - Current: ES
+ESG Progress: 300/763 (39%) - Current: GAS
+ESG Progress: 350/763 (45%) - Current: HRL
+ESG Progress: 400/763 (52%) - Current: KKR
+ESG Progress: 450/763 (58%) - Current: MCHP
+ESG Progress: 500/763 (65%) - Current: NKE
+ESG Progress: 550/763 (72%) - Current: PHM
+ESG Progress: 600/763 (78%) - Current: RTN
+ESG Progress: 650/763 (85%) - Current: TDC
+ESG Progress: 700/763 (91%) - Current: URBN
+ESG Progress: 750/763 (98%) - Current: XEC
+
+================================================================================
+SUMMARY BY FREQUENCY (PRICE DATA)
+================================================================================
+
+Total Symbols Checked: 763
+
+────────────────────────────────────────────────────────────────────────────────
+Frequency: DAILY
+────────────────────────────────────────────────────────────────────────────────
+✅ Complete Data:            715 ( 93.7%)
+⊘  No Overlap:                 0 (  0.0%)
+⚠️  Missing (Simple):          12 (  1.6%)
+⚠️  Missing (With Gaps):        0 (  0.0%)
+❌ Errors:                     0 (  0.0%)
+📊 Total Needing Fetch:       12 (  1.6%)
+
+────────────────────────────────────────────────────────────────────────────────
+Frequency: WEEKLY
+────────────────────────────────────────────────────────────────────────────────
+✅ Complete Data:            715 ( 93.7%)
+⊘  No Overlap:                 0 (  0.0%)
+⚠️  Missing (Simple):          12 (  1.6%)
+⚠️  Missing (With Gaps):        0 (  0.0%)
+❌ Errors:                     0 (  0.0%)
+📊 Total Needing Fetch:       12 (  1.6%)
+
+────────────────────────────────────────────────────────────────────────────────
+Frequency: MONTHLY
+────────────────────────────────────────────────────────────────────────────────
+✅ Complete Data:            716 ( 93.8%)
+⊘  No Overlap:                 0 (  0.0%)
+⚠️  Missing (Simple):          12 (  1.6%)
+⚠️  Missing (With Gaps):        0 (  0.0%)
+❌ Errors:                     0 (  0.0%)
+📊 Total Needing Fetch:       12 (  1.6%)
+
+================================================================================
+MISSING DATA - SIMPLE [DAILY] (All 12 symbols)
+================================================================================
+
+BLL:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2022, 4, 11))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+ENDP:
+  Checked periods: [(datetime.date(2015, 1, 27), datetime.date(2017, 3, 1))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+ESV:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2016, 3, 29))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+FRC:
+  Checked periods: [(datetime.date(2019, 1, 2), datetime.date(2023, 3, 20))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+GPS:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2022, 1, 10))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+HFC:
+  Checked periods: [(datetime.date(2018, 6, 18), datetime.date(2021, 5, 14))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+IGT:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2014, 6, 19))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+LIFE:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2014, 1, 22))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+MNK:
+  Checked periods: [(datetime.date(2014, 8, 19), datetime.date(2017, 7, 25))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+POM:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2016, 3, 18))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+SNDK:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2016, 5, 11))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+WIN:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2015, 3, 31))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+================================================================================
+MISSING DATA - SIMPLE [WEEKLY] (All 12 symbols)
+================================================================================
+
+BLL:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2022, 4, 11))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+ENDP:
+  Checked periods: [(datetime.date(2015, 1, 27), datetime.date(2017, 3, 1))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+ESV:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2016, 3, 29))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+FRC:
+  Checked periods: [(datetime.date(2019, 1, 2), datetime.date(2023, 3, 20))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+GPS:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2022, 1, 10))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+HFC:
+  Checked periods: [(datetime.date(2018, 6, 18), datetime.date(2021, 5, 14))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+IGT:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2014, 6, 19))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+LIFE:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2014, 1, 22))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+MNK:
+  Checked periods: [(datetime.date(2014, 8, 19), datetime.date(2017, 7, 25))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+POM:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2016, 3, 18))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+SNDK:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2016, 5, 11))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+WIN:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2015, 3, 31))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+================================================================================
+MISSING DATA - SIMPLE [MONTHLY] (All 12 symbols)
+================================================================================
+
+BLL:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2022, 4, 11))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+ENDP:
+  Checked periods: [(datetime.date(2015, 1, 27), datetime.date(2017, 3, 1))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+ESV:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2016, 3, 29))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+FRC:
+  Checked periods: [(datetime.date(2019, 1, 2), datetime.date(2023, 3, 20))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+GPS:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2022, 1, 10))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+HFC:
+  Checked periods: [(datetime.date(2018, 6, 18), datetime.date(2021, 5, 14))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+IGT:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2014, 6, 19))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+LIFE:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2014, 1, 22))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+MNK:
+  Checked periods: [(datetime.date(2014, 8, 19), datetime.date(2017, 7, 25))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+POM:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2016, 3, 18))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+SNDK:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2016, 5, 11))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+WIN:
+  Checked periods: [(datetime.date(2014, 1, 7), datetime.date(2015, 3, 31))]
+  Missing range: None to None
+  Expected days: 0
+  Actual days: 0
+  Missing days: 0 (0.0%)
+
+================================================================================
+INSIGHTS
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+ESG DATA COVERAGE
+────────────────────────────────────────────────────────────────────────────────
+✓ Has ESG Data:             456 ( 59.8%)
+⚠️  No ESG Data:              307 ( 40.2%)
+❌ Errors:                     0
+
+================================================================================
+ESG DATA AVAILABLE (456 symbols)
+================================================================================
+  A: 132 records, years 2014-2024
+  AAP: 96 records, years 2014-2023
+  AAPL: 132 records, years 2014-2024
+  ABBV: 132 records, years 2014-2024
+  ABNB: 48 records, years 2021-2024
+  ABT: 132 records, years 2014-2024
+  ADBE: 132 records, years 2014-2024
+  ADI: 132 records, years 2014-2024
+  ADM: 132 records, years 2014-2024
+  ADP: 132 records, years 2014-2024
+  ADSK: 132 records, years 2014-2024
+  ADT: 60 records, years 2020-2024
+  AEE: 132 records, years 2014-2024
+  AEP: 132 records, years 2014-2024
+  AES: 132 records, years 2014-2024
+  AFL: 132 records, years 2014-2024
+  AIG: 132 records, years 2014-2024
+  AIZ: 132 records, years 2014-2024
+  AJG: 132 records, years 2014-2024
+  AKAM: 132 records, years 2014-2024
+  ... and 436 more
+
+================================================================================
+NO ESG DATA (307 symbols)
+================================================================================
+  AABA
+  AAL
+  ABC
+  ABMD
+  ACGL
+  ACN
+  ADS
+  AET
+  AGN
+  AIV
+  ALLE
+  ALTR
+  ALXN
+  AMCR
+  AME
+  AMT
+  AMTM
+  ANDV
+  ANSS
+  ANTM
+  ... and 287 more
+
+================================================================================
+INSIGHTS
+================================================================================
+
+1. Multi-Frequency Checking with Frequency-Aware Alignment:   - Checked daily, weekly, and monthly data for all symbols   - Monthly: Start dates aligned to end-of-month (e.g., 2014-01-01 → 2014-01-31)   - Weekly: Start dates aligned to end-of-week/Friday (e.g., 2014-01-01 → 2014-01-03)   - Daily: No alignment needed (direct date matching)   - This eliminates false 'PARTIAL' warnings for monthly/weekly data
+2. Overlap-Aware Logic Applied:   - Only checked data for periods within BOTH membership AND research window   - Daily: 0 symbols had no overlap   - Weekly: 0 symbols had no overlap   - Monthly: 0 symbols had no overlap
+3. Data Completeness by Frequency:   - Daily: 715 complete (93.7%), 12 missing (1.6%)   - Weekly: 715 complete (93.7%), 12 missing (1.6%)   - Monthly: 716 complete (93.8%), 12 missing (1.6%)
+4. ESG Data Coverage:   - 456 symbols (59.8%) have ESG data   - 307 symbols (40.2%) missing ESG data   - Average 119 ESG records per symbol
+5. Next Steps:   Price Data:     - Daily: Fetch missing data for 12 symbols     - Weekly: Fetch missing data for 12 symbols     - Monthly: Fetch missing data for 12 symbols   ESG Data:     - Process ESG data for 307 symbols without coverage     - Run: python src/programs/process_esg_universe.py
+
+================================================================================
+Report saved to: missing_data_report_20251124_230817.txt
+================================================================================

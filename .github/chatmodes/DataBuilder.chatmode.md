@@ -1,12 +1,12 @@
 ---
 description: QuantX AI Stock Data Fetcher - Expert mode for building a containerized financial data pipeline
-tools: ['edit', 'runNotebooks', 'search', 'new', 'runCommands', 'runTasks', 'Azure MCP/*', 'usages', 'vscodeAPI', 'problems', 'changes', 'testFailure', 'openSimpleBrowser', 'fetch', 'githubRepo', 'ms-azuretools.vscode-azureresourcegroups/azureActivityLog', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'extensions', 'todos', 'runTests']
+tools: ['edit', 'runNotebooks', 'search', 'new', 'runCommands', 'runTasks', 'Azure MCP/*', 'usages', 'vscodeAPI', 'problems', 'changes', 'testFailure', 'openSimpleBrowser', 'fetch', 'githubRepo', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'ms-toolsai.jupyter/configureNotebook', 'ms-toolsai.jupyter/listNotebookPackages', 'ms-toolsai.jupyter/installNotebookPackages', 'extensions', 'todos', 'runTests']
 model: Claude Sonnet 4.5
 ---
 
 # QuantX Financial Data Builder — Copilot Chat Mode
 
-Enterprise-grade financial data pipeline development with Python, Azure Container Apps, and production-ready CLI applications. Focus on building a robust, containerized Python worker that downloads historical daily OHLCV data for various stock markets, writes partitioned Parquet files, and maintains manifest tracking for incremental updates.
+Enterprise-grade financial data pipeline development with Python. Focus on building a robust, containerized Python worker that downloads historical daily OHLCV data for various stock markets, writes partitioned Parquet files, and maintains manifest tracking for incremental updates.
 
 ## Mission Statement
 
@@ -39,27 +39,29 @@ Use Hive‑style folders to encode partition columns in the path. Keep prices se
 
 ```plain
 /data/curated/
-├── prices/                        # FACT: immutable price history
+├── tickers/                        # FACT: immutable price history
     ├── exchange=us/
         ├── ticker=AAPL/
-          ├── freq=daily/
-            ├── adj=true/
+          ├── prices/
+            ├──freq=daily/
               ├── year=2000/           # coarse time partition
                 ├── part-000.parquet
               ├── year=2001/
                 ├── part-000.parquet
-          ├── freq=minute/
-            ├── tz=America/New_York/
+            ├── freq=monthly/
               ├── year=2024/
-                ├── month=01/
-                  ├── day=02/
-                    ├── part-000.parquet
-    ├── exchange=hk/
-        ├── ticker=0005.HK/
-        ├── freq=daily/
-          ├── adj=true/
-            ├── year=2000/
+                ├── part-000.parquet
+          ├── esg/
+            ├── year=2006/
               ├── part-000.parquet
+            ├── year=2007/
+              ├── part-000.parquet
+          ├── fundamentals/
+            ├── statement=income/
+              ├── year=2020/
+                ├── part-000.parquet
+              ├── year=2021/
+                ├── part-000.parquet
 ├── membership/                    # DIM: index/sector universes
     ├── universe=sp500/
         ├── mode=daily/
@@ -114,7 +116,7 @@ Daily — the common case for backtests:
 
 ```plain
 date: date
-ticker_id: int
+gvkey: int        # GVKEY identifier
 open: double
 high: double
 low: double
@@ -133,19 +135,6 @@ freq: string             # 'daily'
 year: int                # materialized for partition pruning
 ```
 
-Minute (optional, with timezone for correct session handling):
-
-```plain
-timestamp: timestamp
-ticker_id: int
-open/high/low/close: double
-volume: int64
-exchange: string
-freq: string   # 'minute'
-tz: string     # 'America/New_York'
-year, month, day: int
-```
-
 - Compression: use snappy for balanced speed/size (default).
 
 ## Universe membership modeling
@@ -158,7 +147,7 @@ Two complementary datasets per universe:
 
 ```plain
 date: date
-ticker_id: int
+gvkey: int
 universe: string   # 'sp500'
 ```
 
@@ -169,7 +158,7 @@ universe: string   # 'sp500'
 - Schema
 
 ```plain
-ticker_id: int
+gvkey: int
 universe: string   # 'sp500'
 start_date: date
 end_date: date

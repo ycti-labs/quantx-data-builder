@@ -21,7 +21,85 @@ from universe import Universe
 
 logger = logging.getLogger(__name__)
 
-TOLERANCE_DAYS_DEFAULT = 2
+DAILY_TOLERANCE_DAYS = 2
+WEEKLY_TOLERANCE_DAYS = 6
+MONTHLY_TOLERANCE_DAYS = 3
+
+
+def align_start_date_to_frequency(start_date: date, frequency: str) -> date:
+    """
+    Align start date to frequency period to avoid false "missing data" warnings
+
+    For monthly data: A request starting 2014-01-01 should expect data from 2014-01-31 (end of month)
+    For weekly data: A request starting Monday should expect data from Friday (end of week)
+    For daily data: No adjustment needed
+
+    Args:
+        start_date: Requested start date
+        frequency: Data frequency ('daily', 'weekly', 'monthly')
+
+    Returns:
+        Aligned start date appropriate for the frequency
+
+    Examples:
+        >>> align_start_date_to_frequency(date(2014, 1, 1), 'monthly')
+        date(2014, 1, 31)  # End of January
+        >>> align_start_date_to_frequency(date(2014, 1, 1), 'daily')
+        date(2014, 1, 1)   # No change
+    """
+    frequency = frequency.lower()
+
+    if frequency == 'monthly':
+        # Align to end of month
+        # Move to first day of next month, then back one day
+        if start_date.month == 12:
+            next_month = start_date.replace(year=start_date.year + 1, month=1, day=1)
+        else:
+            next_month = start_date.replace(month=start_date.month + 1, day=1)
+        return next_month - pd.Timedelta(days=1)
+
+    elif frequency == 'weekly':
+        # Align to end of week (Friday)
+        # If start date is not Saturday or Sunday, move to next Friday
+        days_until_friday = (4 - start_date.weekday()) % 7  # 4 = Friday
+        if days_until_friday == 0 and start_date.weekday() != 4:
+            days_until_friday = 7
+        return start_date + pd.Timedelta(days=days_until_friday)
+
+    else:  # daily or other
+        return start_date
+
+
+def get_tolerance_for_frequency(frequency: str) -> int:
+    """
+    Get appropriate tolerance in days based on data frequency
+
+    Args:
+        frequency: Data frequency ('daily', 'weekly', 'monthly')
+
+    Returns:
+        Tolerance in days
+
+    Examples:
+        >>> get_tolerance_for_frequency('daily')
+        2
+        >>> get_tolerance_for_frequency('weekly')
+        6
+        >>> get_tolerance_for_frequency('monthly')
+        3
+    """
+    frequency = frequency.lower()
+
+    if frequency == 'daily':
+        return DAILY_TOLERANCE_DAYS
+    elif frequency == 'weekly':
+        return WEEKLY_TOLERANCE_DAYS
+    elif frequency == 'monthly':
+        return MONTHLY_TOLERANCE_DAYS
+    else:
+        logger.warning(f"Unknown frequency '{frequency}', using daily tolerance")
+        return DAILY_TOLERANCE_DAYS
+
 
 class PriceManager:
     """
@@ -75,9 +153,9 @@ class PriceManager:
     def fetch_eod(
         self,
         symbol: str,
+        frequency: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        frequency: str = "daily",
         save: bool = True
     ) -> pd.DataFrame:
         """
@@ -134,21 +212,29 @@ class PriceManager:
                 req_start = pd.to_datetime(start_date).date()
                 req_end = pd.to_datetime(end_date).date()
 
+                # Align start date to frequency period to avoid false "missing data" warnings
+                # For monthly: 2014-01-01 → 2014-01-31 (end of month)
+                # For weekly: 2014-01-01 → 2014-01-03 (end of week)
+                aligned_start = align_start_date_to_frequency(req_start, frequency)
+
+                # Get tolerance based on frequency
+                tolerance_days = get_tolerance_for_frequency(frequency)
+
                 # Calculate expected trading days (rough estimate: ~252 trading days per year)
-                total_days = (req_end - req_start).days
+                total_days = (req_end - aligned_start).days
                 expected_rows = int(total_days * 252 / 365) if total_days > 0 else 0
 
-                # Calculate gaps at start and end
-                start_gap_days = (actual_start - req_start).days if actual_start > req_start else 0
+                # Calculate gaps at start and end (using aligned start)
+                start_gap_days = (actual_start - aligned_start).days if actual_start > aligned_start else 0
                 end_gap_days = (req_end - actual_end).days if actual_end < req_end else 0
 
                 # Check if we got the requested range (with tolerance)
-                is_complete = (start_gap_days <= TOLERANCE_DAYS_DEFAULT) and (end_gap_days <= TOLERANCE_DAYS_DEFAULT)
+                is_complete = (start_gap_days <= tolerance_days) and (end_gap_days <= tolerance_days)
 
                 if is_complete:
                     completeness = "COMPLETE"
                     coverage_pct = 100.0 if expected_rows == 0 else min(100.0, (num_rows / expected_rows) * 100)
-                    tolerance_note = f" (±{TOLERANCE_DAYS_DEFAULT}d)" if start_gap_days > 0 or end_gap_days > 0 else ""
+                    tolerance_note = f" (±{tolerance_days}d)" if start_gap_days > 0 or end_gap_days > 0 else ""
                     self.logger.info(
                         f"✅ {symbol}: {num_rows} rows | {completeness}{tolerance_note} "
                         f"({actual_start} to {actual_end}) | Coverage: {coverage_pct:.1f}%"
@@ -159,7 +245,7 @@ class PriceManager:
                         f"⚠️  {symbol}: {num_rows} rows | {completeness} "
                         f"({actual_start} to {actual_end}) | "
                         f"Missing: {start_gap_days}d at start, {end_gap_days}d at end "
-                        f"(tolerance: ±{TOLERANCE_DAYS_DEFAULT}d)"
+                        f"(tolerance: ±{tolerance_days}d)"
                     )
             else:
                 # No date range specified, just report what we got
@@ -169,7 +255,7 @@ class PriceManager:
 
             # Save to Parquet if requested
             if save:
-                saved_paths = self.save_price_data(df, symbol)
+                saved_paths = self.save_price_data(df, symbol, frequency=frequency)
 
             return df
 
@@ -185,9 +271,9 @@ class PriceManager:
     def fetch_multiple_eod(
         self,
         symbols: List[str],
+        frequency: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        frequency: str = "daily",
         skip_errors: bool = True,
         save: bool = True
     ) -> Dict[str, pd.DataFrame]:
@@ -210,7 +296,7 @@ class PriceManager:
 
         for symbol in symbols:
             try:
-                df = self.fetch_eod(symbol, start_date, end_date, frequency=frequency, save=save)
+                df = self.fetch_eod(symbol, frequency=frequency, start_date=start_date, end_date=end_date, save=save)
                 if not df.empty:
                     results[symbol] = df
                 else:
@@ -225,10 +311,10 @@ class PriceManager:
 
     def fetch_universe_eod(
         self,
+        frequency: str,
         start_date: str,
         end_date: Optional[str] = None,
         as_of_date: Optional[str] = None,
-        frequency: str = "daily",
         scope: str = "current",
         skip_errors: bool = True,
         save: bool = True
@@ -269,7 +355,7 @@ class PriceManager:
         )
 
         # Fetch data for all symbols (no save by default for this method)
-        results = self.fetch_multiple_eod(symbols, start_date, end_date, frequency=frequency, skip_errors=skip_errors, save=save)
+        results = self.fetch_multiple_eod(symbols, frequency=frequency, start_date=start_date, end_date=end_date, skip_errors=skip_errors, save=save)
 
         return results
 
@@ -277,7 +363,7 @@ class PriceManager:
         self,
         df: pd.DataFrame,
         symbol: str,
-        frequency: str = "daily",
+        frequency: str,
     ) -> pd.DataFrame:
         """
         Transform Tiingo data to match the canonical price schema
@@ -326,7 +412,7 @@ class PriceManager:
         self,
         df: pd.DataFrame,
         symbol: str,
-        frequency: str = "daily",
+        frequency: str,
     ) -> List[Path]:
         """
         Save price data to Hive-style partitioned Parquet files
@@ -347,7 +433,7 @@ class PriceManager:
             return []
 
         # Transform to canonical schema
-        canonical_df = self._prepare_price_dataframe(df, symbol)
+        canonical_df = self._prepare_price_dataframe(df, symbol, frequency=frequency)
 
         # Group by year and save separately
         saved_paths = []
@@ -391,20 +477,33 @@ class PriceManager:
     def get_existing_date_range(
         self,
         symbol: str,
-        frequency: str = "daily"
+        frequency: str,
     ) -> Optional[Tuple[date, date]]:
         """
         Get the date range of existing data for a symbol
 
+        Automatically resolves ticker transitions (e.g., FB -> META) to find
+        data stored under the current ticker name.
+
         Args:
-            symbol: Ticker symbol
+            symbol: Ticker symbol (can be old or new ticker)
             frequency: Data frequency ('daily', 'weekly', 'monthly')
 
         Returns:
             Tuple of (min_date, max_date) or None if no data exists
         """
+        # Resolve ticker transitions (e.g., FB -> META)
+        from core.ticker_mapper import TickerMapper
+        mapper = TickerMapper()
+        resolved_symbol = mapper.resolve(symbol)
+
+        # If ticker resolved to None (delisted/acquired), no data exists
+        if resolved_symbol is None:
+            return None
+
+        # Use resolved ticker to find data
         ticker_path = self.universe.get_ticker_prices_path(
-            symbol=symbol,
+            symbol=resolved_symbol,
             frequency=frequency
         )
 
@@ -429,18 +528,159 @@ class PriceManager:
 
         return min(all_dates), max(all_dates)
 
+    def fetch_missing_with_ticker_resolution(
+        self,
+        symbols: List[str],
+        frequency: str,
+        start_date: str,
+        end_date: str,
+        ticker_mapper=None,
+        dry_run: bool = False
+    ) -> Dict[str, List]:
+        """
+        Fetch data for symbols that are missing due to ticker transitions
+
+        This is a surgical fix for symbols where data exists under a different ticker.
+        Use this AFTER running check_universe_missing_data() to identify problematic symbols.
+
+        Args:
+            symbols: List of symbols to fix (e.g., ['FB', 'ANTM', 'ABC'])
+            frequency: Data frequency ('daily', 'weekly', 'monthly')
+            start_date: Start date for fetch in 'YYYY-MM-DD' format
+            end_date: End date for fetch in 'YYYY-MM-DD' format
+            ticker_mapper: TickerMapper instance (creates default if None)
+            dry_run: If True, only report what would be done without fetching
+
+        Returns:
+            Dictionary with results:
+            {
+                'fetched': [...],        # Successfully fetched
+                'resolved': {...},       # Ticker transitions applied (original → actual)
+                'skipped': [...],        # Delisted/acquired symbols
+                'failed': [...]          # Errors during fetch
+            }
+
+        Example:
+            >>> from core.ticker_mapper import TickerMapper
+            >>> mapper = TickerMapper()
+            >>> results = price_mgr.fetch_missing_with_ticker_resolution(
+            ...     symbols=['FB', 'ANTM', 'LIFE'],
+            ...     start_date='2014-01-01',
+            ...     end_date='2024-12-31',
+            ...     ticker_mapper=mapper,
+            ...     dry_run=True
+            ... )
+            >>> print(results['resolved'])
+            {'FB': 'META', 'ANTM': 'ELV'}
+            >>> print(results['skipped'])
+            ['LIFE']
+        """
+        # Import here to avoid circular dependency
+        from core.ticker_mapper import TickerMapper
+
+        mapper = ticker_mapper or TickerMapper()
+
+        results = {
+            'fetched': [],
+            'resolved': {},      # original → actual mapping
+            'skipped': [],
+            'failed': []
+        }
+
+        self.logger.info(f"Processing {len(symbols)} symbols with ticker resolution")
+        if dry_run:
+            self.logger.info("DRY RUN MODE - no data will be fetched")
+
+        for i, symbol in enumerate(symbols, 1):
+            try:
+                # Resolve ticker
+                actual_symbol = mapper.resolve(symbol)
+
+                if actual_symbol is None:
+                    self.logger.info(f"[{i}/{len(symbols)}] Skipping {symbol}: delisted/acquired with no successor")
+                    results['skipped'].append(symbol)
+                    continue
+
+                if actual_symbol != symbol:
+                    results['resolved'][symbol] = actual_symbol
+                    self.logger.info(f"[{i}/{len(symbols)}] Resolved: {symbol} → {actual_symbol}")
+                else:
+                    self.logger.info(f"[{i}/{len(symbols)}] No resolution needed for {symbol}")
+
+                if dry_run:
+                    self.logger.info(f"[DRY RUN] Would fetch {actual_symbol} (was {symbol})")
+                    continue
+
+                # Fetch data using resolved ticker
+                self.logger.info(f"Fetching {actual_symbol} from {start_date} to {end_date}...")
+                df = self.fetch_eod(
+                    actual_symbol,  # Use resolved ticker
+                    frequency=frequency,
+                    start_date=start_date,
+                    end_date=end_date,
+                    save=True
+                )
+
+                if not df.empty:
+                    results['fetched'].append({
+                        'original': symbol,
+                        'fetched_as': actual_symbol,
+                        'rows': len(df),
+                        'date_range': (df['date'].min(), df['date'].max())
+                    })
+                    self.logger.info(f"✓ Fetched {len(df)} rows for {symbol} (as {actual_symbol})")
+                else:
+                    results['failed'].append({
+                        'symbol': symbol,
+                        'resolved': actual_symbol,
+                        'reason': 'Empty DataFrame returned'
+                    })
+                    self.logger.warning(f"✗ Empty data for {symbol} (as {actual_symbol})")
+
+            except Exception as e:
+                self.logger.error(f"Failed to fetch {symbol}: {e}")
+                results['failed'].append({
+                    'symbol': symbol,
+                    'resolved': mapper.resolve(symbol),
+                    'error': str(e)
+                })
+
+        # Print summary
+        self.logger.info("=" * 60)
+        self.logger.info("TICKER RESOLUTION SUMMARY")
+        self.logger.info("=" * 60)
+        self.logger.info(f"Total symbols processed: {len(symbols)}")
+        self.logger.info(f"✓ Successfully fetched: {len(results['fetched'])}")
+        self.logger.info(f"→ Ticker transitions: {len(results['resolved'])}")
+        self.logger.info(f"⊘ Skipped (delisted): {len(results['skipped'])}")
+        self.logger.info(f"✗ Failed: {len(results['failed'])}")
+
+        if results['resolved']:
+            self.logger.info("\nTicker Transitions:")
+            for orig, new in results['resolved'].items():
+                self.logger.info(f"  {orig} → {new}")
+
+        if results['skipped']:
+            self.logger.info(f"\nSkipped ({len(results['skipped'])} symbols):")
+            self.logger.info(f"  {', '.join(results['skipped'])}")
+
+        return results
+
     def load_price_data(
         self,
         symbol: str,
+        frequency: str,
         start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        frequency: str = "daily"
+        end_date: Optional[str] = None
     ) -> pd.DataFrame:
         """
         Load price data from saved Parquet files
 
+        Automatically resolves ticker transitions (e.g., FB -> META) to load
+        data stored under the current ticker name.
+
         Args:
-            symbol: Ticker symbol
+            symbol: Ticker symbol (can be old or new ticker)
             start_date: Start date filter (optional)
             end_date: End date filter (optional)
             frequency: Data frequency ('daily', 'weekly', 'monthly')
@@ -448,9 +688,22 @@ class PriceManager:
         Returns:
             DataFrame with price data
         """
+        # Resolve ticker transitions (e.g., FB -> META)
+        from core.ticker_mapper import TickerMapper
+        mapper = TickerMapper()
+        resolved_symbol = mapper.resolve(symbol)
 
-        # Path to ticker directory
-        ticker_path = self.universe.get_ticker_prices_path(symbol=symbol, frequency=frequency)
+        # If ticker resolved to None (delisted/acquired), return empty DataFrame
+        if resolved_symbol is None:
+            self.logger.warning(f"{symbol} is delisted/acquired with no successor")
+            return pd.DataFrame()
+
+        # Log if ticker was resolved
+        if resolved_symbol != symbol:
+            self.logger.info(f"Resolved {symbol} -> {resolved_symbol}")
+
+        # Path to ticker directory (use resolved symbol)
+        ticker_path = self.universe.get_ticker_prices_path(symbol=resolved_symbol, frequency=frequency)
 
         if not ticker_path.exists():
             self.logger.warning(f"No data found for {symbol} at {ticker_path}")
@@ -481,4 +734,55 @@ class PriceManager:
             result = result[result['date'] <= end]
 
         self.logger.info(f"Loaded {len(result)} rows for {symbol}")
+        return result
+
+    def load_market_etf_data(
+        self,
+        frequency: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Load market (ETF) data from saved Parquet files
+
+        Args:
+            start_date: Start date filter (optional)
+            end_date: End date filter (optional)
+            frequency: Data frequency ('daily', 'weekly', 'monthly')
+
+        Returns:
+            DataFrame with price data
+        """
+        # Path to ticker directory (use resolved symbol)
+        ticker_path = self.universe.get_references_path() / f"ticker={self.universe.market_etf}" / "prices" / f"freq={frequency}"
+
+        if not ticker_path.exists():
+            self.logger.warning(f"No data found for {self.universe.market_etf} at {ticker_path}")
+            return pd.DataFrame()
+
+        # Load all year partitions
+        all_data = []
+        for year_dir in ticker_path.glob("year=*"):
+            parquet_file = year_dir / "part-000.parquet"
+            if parquet_file.exists():
+                df = pd.read_parquet(parquet_file)
+                all_data.append(df)
+
+        if not all_data:
+            self.logger.warning(f"No Parquet files found for {self.universe.market_etf}")
+            return pd.DataFrame()
+
+        # Combine all years
+        result = pd.concat(all_data, ignore_index=True)
+        result = result.sort_values('date')
+
+        # Apply date filters
+        if start_date:
+            start = pd.to_datetime(start_date).date()
+            result = result[result['date'] >= start]
+        if end_date:
+            end = pd.to_datetime(end_date).date()
+            result = result[result['date'] <= end]
+
+        self.logger.info(f"Loaded {len(result)} rows for {self.universe.market_etf}")
         return result

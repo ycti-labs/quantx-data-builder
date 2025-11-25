@@ -8,13 +8,59 @@ proper handling of discontinuous membership periods.
 
 import logging
 from datetime import date
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
+
+from src.market.price_manager import align_start_date_to_frequency
 
 logger = logging.getLogger(__name__)
 
 TOLERANCE_DAYS_DEFAULT = 2
+
+
+def get_tolerance_for_frequency(frequency: str) -> int:
+    """
+    Calculate appropriate tolerance in days based on data frequency
+
+    For daily data: Allow ±2 days tolerance (weekends, holidays)
+    For weekly data: Allow ±6 days tolerance (data might be on any weekday)
+    For monthly data: Allow ±3 days tolerance (month-end vs first/last trading day)
+
+    Args:
+        frequency: Data frequency ('daily', 'weekly', 'monthly')
+
+    Returns:
+        Tolerance in days
+
+    Examples:
+        >>> get_tolerance_for_frequency('daily')
+        2
+        >>> get_tolerance_for_frequency('weekly')
+        6
+        >>> get_tolerance_for_frequency('monthly')
+        3
+    """
+    frequency = frequency.lower()
+
+    if frequency == 'daily':
+        # Allow ±2 days for weekends/holidays
+        return 2
+    elif frequency == 'weekly':
+        # Allow ±6 days since weekly data can be any weekday (Monday-Friday)
+        # If required start is Wednesday but data starts Monday, that's 2 days
+        # If required end is Tuesday but data ends Friday, that's 3 days
+        # Maximum possible gap is ~6 days (within same week)
+        return 6
+    elif frequency == 'monthly':
+        # Allow ±3 days for month-end adjustments
+        # Monthly data typically uses last trading day of month
+        # which can be 1-3 days before calendar month-end
+        return 3
+    else:
+        # Unknown frequency, use daily default
+        logger.warning(f"Unknown frequency '{frequency}', using daily tolerance")
+        return 2
 
 
 class MissingDataChecker:
@@ -46,7 +92,8 @@ class MissingDataChecker:
         symbol: str,
         required_start: str,
         required_end: str,
-        tolerance_days: int = TOLERANCE_DAYS_DEFAULT,
+        frequency: str,
+        tolerance_days: Optional[int] = None,
         handle_gaps: bool = True
     ) -> Dict:
         """
@@ -70,7 +117,9 @@ class MissingDataChecker:
             symbol: Ticker symbol
             required_start: Required start date in 'YYYY-MM-DD' format
             required_end: Required end date in 'YYYY-MM-DD' format
-            tolerance_days: Ignore gaps of this many days or less (default: TOLERANCE_DAYS_DEFAULT)
+            frequency: Data frequency ('daily', 'weekly', 'monthly') - default: 'daily'
+            tolerance_days: Ignore gaps of this many days or less. If None, auto-calculated
+                          based on frequency (daily: 2, weekly: 6, monthly: 3)
             handle_gaps: If True, check each period separately (default: True)
                         If False, use simple span check
 
@@ -89,6 +138,13 @@ class MissingDataChecker:
                 - intervals: List of per-period results (if handle_gaps=True and multiple periods)
                 - summary: Overall summary (if handle_gaps=True and multiple periods)
         """
+        # Auto-calculate tolerance if not provided
+        if tolerance_days is None:
+            tolerance_days = get_tolerance_for_frequency(frequency)
+            self.logger.debug(
+                f"Auto-calculated tolerance for {frequency} frequency: {tolerance_days} days"
+            )
+
         req_start = pd.to_datetime(required_start).date()
         req_end = pd.to_datetime(required_end).date()
 
@@ -126,13 +182,13 @@ class MissingDataChecker:
         if use_gap_aware:
             # Gap-aware checking for multiple discontinuous periods
             return self._check_missing_data_with_gaps(
-                symbol, req_start, req_end, tolerance_days,
+                symbol, frequency, req_start, req_end, tolerance_days,
                 membership_intervals, checked_periods
             )
         else:
             # Simple checking for single continuous period
             return self._check_missing_data_simple(
-                symbol, req_start, req_end, tolerance_days,
+                symbol, frequency, req_start, req_end, tolerance_days,
                 membership_intervals, checked_periods
             )
 
@@ -175,6 +231,7 @@ class MissingDataChecker:
     def _check_missing_data_simple(
         self,
         symbol: str,
+        frequency: str,
         req_start: date,
         req_end: date,
         tolerance_days: int,
@@ -203,7 +260,7 @@ class MissingDataChecker:
             member_end = None
 
         # Get existing date range
-        existing_range = self.price_manager.get_existing_date_range(symbol)
+        existing_range = self.price_manager.get_existing_date_range(symbol, frequency=frequency)
 
         if existing_range is None:
             # No data exists - need to fetch entire checked period
@@ -227,8 +284,14 @@ class MissingDataChecker:
 
         actual_start, actual_end = existing_range
 
-        # Calculate gaps within checked period
-        start_gap_days = max(0, (actual_start - effective_start).days)
+        # Apply frequency-aware alignment to avoid false gaps
+        # For monthly: 2014-01-01 → 2014-01-31 (end of month)
+        # For weekly: 2014-01-01 → 2014-01-03 (end of week/Friday)
+        # For daily: No change
+        aligned_start = align_start_date_to_frequency(effective_start, frequency)
+
+        # Calculate gaps within checked period using aligned start
+        start_gap_days = max(0, (actual_start - aligned_start).days)
         end_gap_days = max(0, (effective_end - actual_end).days)
 
         # Determine status with tolerance
@@ -276,6 +339,7 @@ class MissingDataChecker:
     def _check_missing_data_with_gaps(
         self,
         symbol: str,
+        frequency: str,
         req_start: date,
         req_end: date,
         tolerance_days: int,
@@ -288,7 +352,7 @@ class MissingDataChecker:
         Internal method - use check_missing_data() instead
         """
         # Get existing data range once
-        existing_range = self.price_manager.get_existing_date_range(symbol)
+        existing_range = self.price_manager.get_existing_date_range(symbol, frequency=frequency)
 
         # Check each period separately
         period_results = []
@@ -316,8 +380,14 @@ class MissingDataChecker:
             else:
                 actual_start, actual_end = existing_range
 
-                # Calculate gaps within this period
-                start_gap = max(0, (actual_start - period_start).days)
+                # Apply frequency-aware alignment to avoid false gaps
+                # For monthly: 2014-01-01 → 2014-01-31 (end of month)
+                # For weekly: 2014-01-01 → 2014-01-03 (end of week/Friday)
+                # For daily: No change
+                aligned_period_start = align_start_date_to_frequency(period_start, frequency)
+
+                # Calculate gaps within this period using aligned start
+                start_gap = max(0, (actual_start - aligned_period_start).days)
                 end_gap = max(0, (period_end - actual_end).days)
 
                 # Check if complete within tolerance
@@ -383,11 +453,11 @@ class MissingDataChecker:
 
     def check_universe_missing_data(
         self,
+        frequency: str,
         required_start: str,
         required_end: str,
         tolerance_days: int = TOLERANCE_DAYS_DEFAULT,
-        scope: str = "current",
-        frequency: str = "daily",
+        scope: str = "current"
     ) -> Dict:
         """
         Check missing data for all symbols in the universe
@@ -485,11 +555,11 @@ class MissingDataChecker:
 
     def fetch_universe_missing_data(
         self,
+        frequency: str,
         required_start: str,
         required_end: str,
         tolerance_days: int = TOLERANCE_DAYS_DEFAULT,
         scope: str = "current",
-        frequency: str = "daily",
         skip_complete: bool = True,
         skip_errors: bool = True
     ) -> Dict:

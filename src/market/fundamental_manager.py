@@ -218,13 +218,14 @@ class FundamentalManager:
         """
         Save fundamental data to Hive-style partitioned Parquet files
 
-        Storage structure:
-        data/fundamentals/
+        Storage structure (unified with prices and ESG):
+        data/curated/tickers/
             exchange={exchange}/
                 ticker={symbol}/
-                    statement={statement_type}/
-                        year={year}/
-                            part-000.parquet
+                    fundamentals/
+                        statement={statement_type}/
+                            year={year}/
+                                part-000.parquet
 
         Args:
             df: DataFrame with fundamental data
@@ -294,12 +295,14 @@ class FundamentalManager:
         for year in df['year'].unique():
             year_df = df[df['year'] == year].copy()
 
-            # Build path: fundamentals/exchange={ex}/ticker={sym}/statement={type}/year={yr}/
+            # Build path: tickers/exchange={ex}/ticker={sym}/fundamentals/statement={type}/year={yr}/
             partition_path = (
                 self.universe.data_root /
-                "fundamentals" /
+                "curated" /
+                "tickers" /
                 f"exchange={self.universe.exchange}" /
                 f"ticker={symbol}" /
+                "fundamentals" /
                 f"statement={statement_type}" /
                 f"year={year}"
             )
@@ -357,9 +360,11 @@ class FundamentalManager:
         """
         base_path = (
             self.universe.data_root /
-            "fundamentals" /
+            "curated" /
+            "tickers" /
             f"exchange={self.universe.exchange}" /
-            f"ticker={symbol}"
+            f"ticker={symbol}" /
+            "fundamentals"
         )
 
         if not base_path.exists():

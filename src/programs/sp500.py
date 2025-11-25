@@ -31,7 +31,7 @@ def build_membership():
 
     return stats
 
-def get_spy_historical_data():
+def get_spy_historical_data(frequency="daily"):
     start_date = config.get("universe.sp500.start_date")
     end_date = config.get("universe.sp500.end_date")
 
@@ -40,11 +40,11 @@ def get_spy_historical_data():
         universe=sp500_universe
     )
 
-    result = price_data_mgr.fetch_eod(symbol='SPY', start_date=start_date, end_date=end_date, frequency="daily", save=True)
-    print( f"Fetched {len(result[0])} rows for SPY from {start_date} to {end_date}" )
+    result = price_data_mgr.fetch_eod(symbol='SPY', start_date=start_date, end_date=end_date, frequency=frequency, save=True)
+    print( f"Fetched {len(result)} rows for SPY from {start_date} to {end_date}" )
     return result
 
-def build_historic_database():
+def build_historic_database(frequency="daily"):
     """
     Build complete S&P 500 database for a date range
 
@@ -73,7 +73,7 @@ def build_historic_database():
     results = prica_data_mgr.fetch_universe_eod(
         start_date=start_date,
         end_date=end_date,
-        frequency="daily",
+        frequency=frequency,
         scope="historical",
         skip_errors=True,
         save=True

@@ -5,7 +5,7 @@ Reads raw historical S&P 500 constituent data and generates:
 1. Daily membership snapshots (ticker-date pairs)
 2. Membership intervals (ticker with start/end dates for consecutive runs)
 
-Input:  /data/raw/S&P 500 Historical Components & Changes(MM-DD-YYYY).csv
+Input:  Configured via settings.yaml -> universe.sp500.membership_file
 Output: /data/curated/membership/*.parquet (Snappy compressed)
 
 Data Contract:
@@ -16,11 +16,9 @@ Data Contract:
 import sys
 from pathlib import Path
 from typing import List, Optional
-
 import pandas as pd
 
 from .universe import Universe
-
 
 class SP500Universe(Universe):
     """
@@ -39,10 +37,12 @@ class SP500Universe(Universe):
 
         Args:
             data_root: Root directory for data storage (for curated and raw)
+            config_path: Path to settings.yaml configuration file
         """
         super().__init__(universe_name="sp500",
                          exchange="us",
                          currency="USD",
+                         market_etf="SPY",
                          data_root=data_root,
         )
 
@@ -142,26 +142,35 @@ class SP500Universe(Universe):
     def build_membership(
         self,
         min_date: str = "2000-01-01",
+        rebuild: bool = False,
+        membership_filename: str = "S&P 500 Historical Components & Changes.csv"
     ) -> dict:
         """
         Build S&P 500 membership datasets from raw historical data.
 
         Args:
             min_date: Minimum date to include (ISO format YYYY-MM-DD)
-            universe_name: Universe name for output paths (default: 'sp500')
+            rebuild: If True, delete existing files and rebuild from scratch.
+                    If False, update existing data with new records.
 
         Returns:
             Dictionary with statistics and output paths
         """
         raw_data_root = self.data_root / "raw"
-        # Find raw CSV (flexible naming with date stamp)
-        raw_csv_files = list(raw_data_root.glob("S&P 500 Historical Components*.csv"))
-        if not raw_csv_files:
-            raise FileNotFoundError(
-                f"No S&P 500 historical CSV found in {raw_data_root}"
-            )
 
-        raw_csv_path = raw_csv_files[0]  # Use first match
+        # Use configured filename from settings.yaml
+        raw_csv_path = raw_data_root / membership_filename
+
+        if not raw_csv_path.exists():
+            # Fallback: try to find any matching file
+            raw_csv_files = list(raw_data_root.glob("S&P 500 Historical Components*.csv"))
+            if not raw_csv_files:
+                raise FileNotFoundError(
+                    f"No S&P 500 historical CSV found. Looking for: {raw_csv_path}"
+                )
+            raw_csv_path = raw_csv_files[0]
+            print(f"⚠️  Configured file not found, using: {raw_csv_path.name}")
+
         print(f"📂 Loading: {raw_csv_path}")
 
         # Step 1: Load and expand daily membership
@@ -169,13 +178,32 @@ class SP500Universe(Universe):
             str(raw_csv_path), min_date=min_date
         )
 
-        # Step 2: Synthesize membership intervals
-        membership_intervals = self.synthesize_membership_intervals(membership_daily)
-
-        # Step 3: Write Snappy-compressed Parquet files using parent method
+        # Define output paths
         daily_output = self.get_membership_path(mode='daily') / f"{self.name}_membership_daily.parquet"
         intervals_output = self.get_membership_path(mode='intervals') / f"{self.name}_membership_intervals.parquet"
 
+        if rebuild:
+            # Delete existing files if rebuild requested
+            if daily_output.exists():
+                daily_output.unlink()
+                print(f"🗑️  Deleted existing: {daily_output.name}")
+            if intervals_output.exists():
+                intervals_output.unlink()
+                print(f"🗑️  Deleted existing: {intervals_output.name}")
+        else:
+            # Try to merge with existing data
+            if daily_output.exists():
+                print(f"📊 Merging with existing daily membership data...")
+                existing_daily = pd.read_parquet(daily_output)
+                membership_daily = pd.concat([existing_daily, membership_daily], ignore_index=True)
+                membership_daily = membership_daily.drop_duplicates(subset=['date', 'ticker']).sort_values(['date', 'ticker'])
+                print(f"   Merged: {len(existing_daily):,} existing + {len(membership_daily) - len(existing_daily):,} new = {len(membership_daily):,} total")
+
+        # Step 2: Synthesize membership intervals
+        print(f"🔄 Synthesizing membership intervals...")
+        membership_intervals = self.synthesize_membership_intervals(membership_daily)
+
+        # Step 3: Write Snappy-compressed Parquet files using parent method
         self.write_parquet(membership_daily, daily_output)
         self.write_parquet(membership_intervals, intervals_output)
 
