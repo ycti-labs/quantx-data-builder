@@ -215,6 +215,7 @@ __marimo__/
 # Data and logs
 logs/
 data/
+.DS_Store
 
 # Local settings
 .env

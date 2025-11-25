@@ -36,6 +36,21 @@ fetcher:
     min_wait: 2
     max_wait: 10
 
+# Expected Returns Configuration
+expected_returns:
+  # Factor premia shrinkage (Option 2)
+  premia_shrinkage:
+    enabled: true
+    weight: 0.5  # 0.0 = use only historical, 1.0 = use only sample estimate
+    historical_market_premium: 0.005  # 6% annual = 0.005 monthly
+    historical_esg_premium: 0.0  # Assume zero long-term ESG premium
+
+  # Beta capping/winsorization (Option 3)
+  beta_caps:
+    enabled: true
+    market_cap: 3.0  # Cap β_market at [-3, 3]
+    esg_cap: 5.0  # Cap β_ESG at [-5, 5]
+
 # Logging Configuration
 logging:
   level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL

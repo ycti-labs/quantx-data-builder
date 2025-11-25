@@ -847,3 +847,120 @@ class ESGManager:
                 self.logger.info(f"  ... and {len(results['errors']) - 10} more")
 
         return results
+
+    def get_sector_mapping(
+        self, tickers: List[str], exchange: str = "us"
+    ) -> Optional[pd.Series]:
+        """
+        Get sector classification for tickers from SIC codes in saved ESG Parquet files
+
+        Reads from already-processed ESG data stored in:
+        data/curated/tickers/exchange={exchange}/ticker={symbol}/esg/year=YYYY/part-000.parquet
+
+        Uses SIC (Standard Industrial Classification) codes to map tickers
+        to broad sectors. SIC codes are grouped into major industry divisions:
+
+        - 0100-0999: Agriculture, Forestry, Fishing
+        - 1000-1499: Mining
+        - 1500-1799: Construction
+        - 2000-3999: Manufacturing
+        - 4000-4999: Transportation, Communications, Utilities
+        - 5000-5199: Wholesale Trade
+        - 5200-5999: Retail Trade
+        - 6000-6799: Finance, Insurance, Real Estate
+        - 7000-8999: Services
+        - 9000-9999: Public Administration
+
+        For more granular sector classification, consider using:
+        - GICS (Global Industry Classification Standard)
+        - NAICS (North American Industry Classification System)
+
+        Args:
+            tickers: List of ticker symbols
+            exchange: Exchange code (default: 'us')
+
+        Returns:
+            Series with index=ticker, value=sector name
+            Returns None if ESG data not available or no SIC codes found
+        """
+        try:
+            ticker_sectors = {}
+            missing_count = 0
+
+            for ticker in tickers:
+                # Load saved ESG data for this ticker
+                esg_df = self.load_esg_data(ticker=ticker, exchange=exchange)
+
+                if esg_df.empty:
+                    missing_count += 1
+                    continue
+
+                # Get most recent SIC code
+                if "sic_code" in esg_df.columns:
+                    # Get latest non-null SIC code
+                    sic_codes = esg_df["sic_code"].dropna()
+
+                    if not sic_codes.empty:
+                        sic_code = sic_codes.iloc[-1]
+
+                        if pd.notna(sic_code):
+                            # Map SIC to sector
+                            sector = self._sic_to_sector(int(sic_code))
+                            ticker_sectors[ticker] = sector
+
+            if not ticker_sectors:
+                self.logger.warning(
+                    f"No SIC codes found for sector mapping. "
+                    f"Checked {len(tickers)} tickers, {missing_count} had no ESG data."
+                )
+                return None
+
+            sector_series = pd.Series(ticker_sectors)
+            self.logger.info(
+                f"Mapped {len(sector_series)}/{len(tickers)} tickers to {sector_series.nunique()} sectors "
+                f"({missing_count} missing ESG data)"
+            )
+
+            # Log sector distribution for debugging
+            sector_counts = sector_series.value_counts()
+            self.logger.debug("Sector distribution:")
+            for sector, count in sector_counts.items():
+                self.logger.debug(f"  {sector}: {count} tickers")
+
+            return sector_series
+
+        except Exception as e:
+            self.logger.error(f"Error getting sector mapping: {e}")
+            return None
+
+    @staticmethod
+    def _sic_to_sector(sic_code: int) -> str:
+        """
+        Map SIC code to broad sector
+
+        Args:
+            sic_code: Standard Industrial Classification code
+
+        Returns:
+            Sector name
+        """
+        if sic_code < 1000:
+            return "Agriculture"
+        elif sic_code < 1500:
+            return "Mining"
+        elif sic_code < 1800:
+            return "Construction"
+        elif sic_code < 4000:
+            return "Manufacturing"
+        elif sic_code < 5000:
+            return "Transportation & Utilities"
+        elif sic_code < 5200:
+            return "Wholesale Trade"
+        elif sic_code < 6000:
+            return "Retail Trade"
+        elif sic_code < 6800:
+            return "Finance & Real Estate"
+        elif sic_code < 9000:
+            return "Services"
+        else:
+            return "Public Administration"

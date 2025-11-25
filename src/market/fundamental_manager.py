@@ -55,14 +55,14 @@ class FundamentalManager:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
-        reraise=True
+        reraise=True,
     )
     def fetch_fundamentals(
         self,
         symbol: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        save: bool = True
+        save: bool = True,
     ) -> Tuple[pd.DataFrame, List[Path]]:
         """
         Fetch fundamental data for a symbol using tiingo-python library
@@ -86,9 +86,7 @@ class FundamentalManager:
             # Use tiingo-python library to fetch fundamentals
             # get_fundamentals_statements returns financial statements data
             df = self.tiingo.get_fundamentals_statements(
-                symbol,
-                startDate=start_date,
-                endDate=end_date
+                symbol, startDate=start_date, endDate=end_date
             )
 
             if df is None or (isinstance(df, pd.DataFrame) and df.empty):
@@ -100,15 +98,15 @@ class FundamentalManager:
                 df = pd.DataFrame(df)
 
             # Add ticker symbol column if not present
-            if 'ticker' not in df.columns:
-                df['ticker'] = symbol
+            if "ticker" not in df.columns:
+                df["ticker"] = symbol
 
             # Parse date if needed
-            if 'date' in df.columns:
-                df['date'] = pd.to_datetime(df['date']).dt.date
-            elif 'quarter' in df.columns:
+            if "date" in df.columns:
+                df["date"] = pd.to_datetime(df["date"]).dt.date
+            elif "quarter" in df.columns:
                 # Handle quarterly data
-                df['date'] = pd.to_datetime(df['quarter']).dt.date
+                df["date"] = pd.to_datetime(df["quarter"]).dt.date
 
             self.logger.info(f"✅ Fetched {len(df)} fundamental records for {symbol}")
 
@@ -134,7 +132,7 @@ class FundamentalManager:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         skip_errors: bool = True,
-        save: bool = True
+        save: bool = True,
     ):
         """
         Fetch fundamental data for multiple symbols
@@ -154,7 +152,9 @@ class FundamentalManager:
 
         for symbol in symbols:
             try:
-                df, paths = self.fetch_fundamentals(symbol, start_date, end_date, save=save)
+                df, paths = self.fetch_fundamentals(
+                    symbol, start_date, end_date, save=save
+                )
                 if not df.empty:
                     if save:
                         results[symbol] = (df, paths)
@@ -176,7 +176,7 @@ class FundamentalManager:
         end_date: Optional[str] = None,
         as_of_date: Optional[str] = None,
         skip_errors: bool = True,
-        save: bool = False
+        save: bool = False,
     ) -> Dict[str, pd.DataFrame]:
         """
         Fetch fundamental data for all members of a universe
@@ -207,13 +207,12 @@ class FundamentalManager:
         )
 
         # Fetch data for all symbols (no save by default for this method)
-        return self.fetch_multiple_fundamentals(symbols, start_date, end_date, skip_errors, save=save)
+        return self.fetch_multiple_fundamentals(
+            symbols, start_date, end_date, skip_errors, save=save
+        )
 
     def save_fundamental_data(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-        statement_type: str = "mixed"
+        self, df: pd.DataFrame, symbol: str, statement_type: str = "mixed"
     ) -> List[Path]:
         """
         Save fundamental data to Hive-style partitioned Parquet files
@@ -243,10 +242,10 @@ class FundamentalManager:
 
         try:
             # Determine statement type if not specified
-            if 'statementType' in df.columns:
+            if "statementType" in df.columns:
                 # Group by statement type
-                for stmt_type in df['statementType'].unique():
-                    stmt_df = df[df['statementType'] == stmt_type].copy()
+                for stmt_type in df["statementType"].unique():
+                    stmt_df = df[df["statementType"] == stmt_type].copy()
                     paths = self._save_statement_partition(stmt_df, symbol, stmt_type)
                     saved_paths.extend(paths)
             else:
@@ -261,10 +260,7 @@ class FundamentalManager:
             raise
 
     def _save_statement_partition(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-        statement_type: str
+        self, df: pd.DataFrame, symbol: str, statement_type: str
     ) -> List[Path]:
         """
         Save fundamental data partition for a specific statement type
@@ -280,31 +276,31 @@ class FundamentalManager:
         saved_paths = []
 
         # Add metadata columns
-        df['exchange'] = self.universe.exchange
-        df['ticker'] = symbol
+        df["exchange"] = self.universe.exchange
+        df["ticker"] = symbol
 
         # Extract year from date
-        if 'date' in df.columns:
-            df['year'] = pd.to_datetime(df['date']).dt.year
-        elif 'quarter' in df.columns:
-            df['year'] = pd.to_datetime(df['quarter']).dt.year
+        if "date" in df.columns:
+            df["year"] = pd.to_datetime(df["date"]).dt.year
+        elif "quarter" in df.columns:
+            df["year"] = pd.to_datetime(df["quarter"]).dt.year
         else:
-            df['year'] = datetime.now().year
+            df["year"] = datetime.now().year
 
         # Group by year and save
-        for year in df['year'].unique():
-            year_df = df[df['year'] == year].copy()
+        for year in df["year"].unique():
+            year_df = df[df["year"] == year].copy()
 
             # Build path: tickers/exchange={ex}/ticker={sym}/fundamentals/statement={type}/year={yr}/
             partition_path = (
-                self.universe.data_root /
-                "curated" /
-                "tickers" /
-                f"exchange={self.universe.exchange}" /
-                f"ticker={symbol}" /
-                "fundamentals" /
-                f"statement={statement_type}" /
-                f"year={year}"
+                self.universe.data_root
+                / "curated"
+                / "tickers"
+                / f"exchange={self.universe.exchange}"
+                / f"ticker={symbol}"
+                / "fundamentals"
+                / f"statement={statement_type}"
+                / f"year={year}"
             )
 
             partition_path.mkdir(parents=True, exist_ok=True)
@@ -317,22 +313,23 @@ class FundamentalManager:
                 combined_df = pd.concat([existing_df, year_df], ignore_index=True)
 
                 # Deduplicate based on date and field (if applicable)
-                if 'date' in combined_df.columns and 'dataCode' in combined_df.columns:
+                if "date" in combined_df.columns and "dataCode" in combined_df.columns:
                     combined_df = combined_df.drop_duplicates(
-                        subset=['date', 'dataCode'],
-                        keep='last'
+                        subset=["date", "dataCode"], keep="last"
                     )
-                elif 'quarter' in combined_df.columns and 'dataCode' in combined_df.columns:
+                elif (
+                    "quarter" in combined_df.columns
+                    and "dataCode" in combined_df.columns
+                ):
                     combined_df = combined_df.drop_duplicates(
-                        subset=['quarter', 'dataCode'],
-                        keep='last'
+                        subset=["quarter", "dataCode"], keep="last"
                     )
 
-                combined_df.to_parquet(file_path, compression='snappy', index=False)
+                combined_df.to_parquet(file_path, compression="snappy", index=False)
                 self.logger.info(f"📝 Updated {file_path} ({len(combined_df)} records)")
             else:
                 # Save new file
-                year_df.to_parquet(file_path, compression='snappy', index=False)
+                year_df.to_parquet(file_path, compression="snappy", index=False)
                 self.logger.info(f"💾 Saved {file_path} ({len(year_df)} records)")
 
             saved_paths.append(file_path)
@@ -344,7 +341,7 @@ class FundamentalManager:
         symbol: str,
         statement_type: Optional[str] = None,
         start_date: Optional[str] = None,
-        end_date: Optional[str] = None
+        end_date: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Read saved fundamental data for a symbol
@@ -359,12 +356,12 @@ class FundamentalManager:
             DataFrame with fundamental data
         """
         base_path = (
-            self.universe.data_root /
-            "curated" /
-            "tickers" /
-            f"exchange={self.universe.exchange}" /
-            f"ticker={symbol}" /
-            "fundamentals"
+            self.universe.data_root
+            / "curated"
+            / "tickers"
+            / f"exchange={self.universe.exchange}"
+            / f"ticker={symbol}"
+            / "fundamentals"
         )
 
         if not base_path.exists():
@@ -378,7 +375,11 @@ class FundamentalManager:
             statement_paths = [base_path / f"statement={statement_type}"]
         else:
             # Read all statement types
-            statement_paths = [p for p in base_path.iterdir() if p.is_dir() and p.name.startswith("statement=")]
+            statement_paths = [
+                p
+                for p in base_path.iterdir()
+                if p.is_dir() and p.name.startswith("statement=")
+            ]
 
         for stmt_path in statement_paths:
             if not stmt_path.exists():
@@ -405,21 +406,22 @@ class FundamentalManager:
 
         # Apply date filters if provided
         if start_date or end_date:
-            date_col = 'date' if 'date' in combined_df.columns else 'quarter'
+            date_col = "date" if "date" in combined_df.columns else "quarter"
             if date_col in combined_df.columns:
                 combined_df[date_col] = pd.to_datetime(combined_df[date_col])
                 if start_date:
-                    combined_df = combined_df[combined_df[date_col] >= pd.to_datetime(start_date)]
+                    combined_df = combined_df[
+                        combined_df[date_col] >= pd.to_datetime(start_date)
+                    ]
                 if end_date:
-                    combined_df = combined_df[combined_df[date_col] <= pd.to_datetime(end_date)]
+                    combined_df = combined_df[
+                        combined_df[date_col] <= pd.to_datetime(end_date)
+                    ]
 
         return combined_df
 
     def check_missing_data(
-        self,
-        symbol: str,
-        required_start: str,
-        required_end: str
+        self, symbol: str, required_start: str, required_end: str
     ) -> Dict:
         """
         Check if fundamental data exists for a symbol and identify gaps
@@ -442,20 +444,20 @@ class FundamentalManager:
 
         if df.empty:
             return {
-                'status': 'missing',
-                'actual_start': None,
-                'actual_end': None,
-                'has_data': False
+                "status": "missing",
+                "actual_start": None,
+                "actual_end": None,
+                "has_data": False,
             }
 
         # Get date range
-        date_col = 'date' if 'date' in df.columns else 'quarter'
+        date_col = "date" if "date" in df.columns else "quarter"
         if date_col not in df.columns:
             return {
-                'status': 'missing',
-                'actual_start': None,
-                'actual_end': None,
-                'has_data': False
+                "status": "missing",
+                "actual_start": None,
+                "actual_end": None,
+                "has_data": False,
             }
 
         df[date_col] = pd.to_datetime(df[date_col])
@@ -470,21 +472,23 @@ class FundamentalManager:
         has_overlap = not (actual_end < req_start or actual_start > req_end)
 
         if has_overlap:
-            status = 'complete'  # We have some data in the period
+            status = "complete"  # We have some data in the period
         else:
-            status = 'partial'  # Data exists but not in required period
+            status = "partial"  # Data exists but not in required period
 
         return {
-            'status': status,
-            'actual_start': actual_start.date(),
-            'actual_end': actual_end.date(),
-            'has_data': True
+            "status": status,
+            "actual_start": actual_start.date(),
+            "actual_end": actual_end.date(),
+            "has_data": True,
         }
 
     def fetch_metrics(
         self,
         symbol: str,
-        save: bool = True
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        save: bool = True,
     ) -> Tuple[pd.DataFrame, List[Path]]:
         """
         Fetch daily fundamental metrics for a symbol (P/E ratio, market cap, etc.)
@@ -493,6 +497,8 @@ class FundamentalManager:
 
         Args:
             symbol: Ticker symbol
+            start_date: Start date in 'YYYY-MM-DD' format (optional)
+            end_date: End date in 'YYYY-MM-DD' format (optional, defaults to today)
             save: If True, save to Parquet files (default: True)
 
         Returns:
@@ -500,7 +506,9 @@ class FundamentalManager:
         """
         try:
             # Fetch daily fundamental metrics from Tiingo
-            df = self.tiingo.get_fundamentals_daily(symbol)
+            df = self.tiingo.get_fundamentals_daily(
+                symbol, startDate=start_date, endDate=end_date
+            )
 
             if df is None or (isinstance(df, pd.DataFrame) and df.empty):
                 self.logger.warning(f"No metrics data returned for {symbol}")
@@ -510,17 +518,19 @@ class FundamentalManager:
                 df = pd.DataFrame(df)
 
             # Add ticker symbol
-            if 'ticker' not in df.columns:
-                df['ticker'] = symbol
+            if "ticker" not in df.columns:
+                df["ticker"] = symbol
 
             # Parse date if needed
-            if 'date' in df.columns:
-                df['date'] = pd.to_datetime(df['date']).dt.date
+            if "date" in df.columns:
+                df["date"] = pd.to_datetime(df["date"]).dt.date
 
             self.logger.info(f"✅ Fetched {len(df)} metric records for {symbol}")
 
             if save:
-                saved_paths = self.save_fundamental_data(df, symbol, statement_type='metrics')
+                saved_paths = self.save_fundamental_data(
+                    df, symbol, statement_type="metrics"
+                )
                 return df, saved_paths
             else:
                 return df, []
